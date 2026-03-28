@@ -6,6 +6,8 @@
   "adminPassword": "admin",
   "port": 7777,
   "queryPort": 27015,
+  "enableRcon": true,
+  "rconPort": 27020,
   "mods": "",
   "noBattlEye": false,
   "autoManagedMods": false,

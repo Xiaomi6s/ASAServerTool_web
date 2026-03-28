@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const consoleLog = document.getElementById('consoleLog');
     const statusBadge = document.getElementById('statusBadge');
     const installStatusText = document.getElementById('installStatusText');
+    const serverMapBadge = document.getElementById('serverMapBadge');
+    const serverMapText = document.getElementById('serverMapText');
     const cpuUsageText = document.getElementById('cpuUsageText');
     const memUsageText = document.getElementById('memUsageText');
     const cpuBar = document.getElementById('cpuBar');
@@ -22,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 表单元素
     const fields = [
         // 服务器设置
-        'serverName', 'maxPlayers', 'map', 'serverPassword', 'adminPassword', 'port', 'queryPort', 'mods', 'noBattlEye', 'autoManagedMods', 'autoSavePeriod', 'customArgs',
+        'serverName', 'maxPlayers', 'map', 'serverPassword', 'adminPassword', 'port', 'queryPort', 'enableRcon', 'rconPort', 'mods', 'noBattlEye', 'autoManagedMods', 'autoSavePeriod', 'customArgs',
         // 玩家
         'playerDamage', 'playerResistance', 'playerWaterDrain', 'playerFoodDrain', 'playerStaminaDrain', 'playerHealthRecovery', 'playerHarvestingDamage',
         // 生物
@@ -74,7 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
             fields.forEach(field => {
                 const el = document.getElementById(field);
                 if (el) {
-                    if (el.type === 'checkbox') {
+                    if (field === 'enableRcon' && data[field] === undefined) {
+                        el.checked = true;
+                    } else if (field === 'rconPort' && data[field] === undefined) {
+                        el.value = 27020;
+                    } else if (el.type === 'checkbox') {
                         el.checked = data[field] !== undefined ? !!data[field] : el.checked;
                     } else {
                         el.value = data[field] !== undefined ? data[field] : el.value;
@@ -339,6 +345,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     serverIpPortText.textContent = `127.0.0.1:${port}`;
                     serverAddressBadge.style.display = 'inline-block';
                 });
+                
+            // 显示当前运行的地图
+            const mapSelect = document.getElementById('map');
+            if (mapSelect && mapSelect.options[mapSelect.selectedIndex]) {
+                // 提取括号外的地图英文名或只显示中文
+                let mapName = mapSelect.options[mapSelect.selectedIndex].text;
+                // 简化显示，例如 "TheIsland_WP (孤岛)" 变为 "孤岛"
+                const match = mapName.match(/\(([^)]+)\)/);
+                if (match) {
+                    mapName = match[1];
+                }
+                serverMapText.textContent = mapName;
+                serverMapBadge.style.display = 'inline-block';
+            }
             
         } else if (status === 'stopped') {
             statusBadge.textContent = '已停止';
@@ -348,6 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnUpdate.disabled = false;
             btnSave.disabled = true;
             serverAddressBadge.style.display = 'none';
+            serverMapBadge.style.display = 'none';
             // 每次停止时重新检测一下安装状态
             checkInstallStatus();
         } else if (status === 'starting') {

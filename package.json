@@ -22,9 +22,11 @@
   "dependencies": {
     "adm-zip": "^0.5.16",
     "archiver": "^7.0.1",
+    "battlemetrics": "^1.1.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "pidusage": "^4.0.1",
+    "srcds-rcon": "^2.2.1",
     "ws": "^8.20.0"
   },
   "devDependencies": {

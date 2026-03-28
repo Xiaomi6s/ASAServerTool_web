@@ -43,6 +43,7 @@
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <strong class="text-secondary mb-0"><i class="bi bi-activity me-2"></i>实时状态</strong>
                             <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border px-2 py-1" id="serverMapBadge" style="display: none;"><i class="bi bi-map-fill me-1"></i><span id="serverMapText">未知地图</span></span>
                                 <span class="badge bg-light text-dark border px-2 py-1" id="serverAddressBadge" style="display: none;"><i class="bi bi-link-45deg me-1"></i><span id="serverIpPortText">127.0.0.1:7777</span></span>
                                 <span class="badge bg-primary rounded-pill px-2 py-1"><i class="bi bi-people-fill me-1"></i>在线人数: <span id="onlinePlayersText">0 / 0</span></span>
                             </div>
@@ -196,6 +197,19 @@
                                     <label class="form-label fw-bold">自动存档间隔 (分钟)</label>
                                     <input type="number" class="form-control" id="autoSavePeriod" value="15">
                                     <div class="form-text">服务器自动将游戏状态保存到磁盘的时间间隔。</div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col">
+                                        <label class="form-label fw-bold">启用 RCON</label>
+                                        <div class="form-check form-switch mt-2">
+                                            <input class="form-check-input" type="checkbox" id="enableRcon" checked>
+                                            <label class="form-check-label">开启 RCON 远程控制 (推荐开启以获取在线人数和存档)</label>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label fw-bold">RCON 端口</label>
+                                        <input type="number" class="form-control" id="rconPort" value="27020">
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">自定义启动参数</label>

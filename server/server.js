@@ -9,6 +9,7 @@ const https = require('https');
 const AdmZip = require('adm-zip');
 const archiver = require('archiver');
 const pidusage = require('pidusage');
+const Rcon = require('srcds-rcon');
 
 const app = express();
 const server = http.createServer(app);
@@ -318,6 +319,7 @@ app.post('/api/server/start', (req, res) => {
         if (config.serverPassword) args.push(`?ServerPassword=${config.serverPassword}`);
         if (config.adminPassword) args.push(`?ServerAdminPassword=${config.adminPassword}`);
         if (config.enablePvE) args.push(`?ServerPVE=true`);
+        if (config.enableRcon) args[0] += `?RCONEnabled=True?RCONPort=${config.rconPort || 27020}`;
         
         // 追加 Mod 和启动命令行参数 (-)
         if (config.mods) args.push(`-mods=${config.mods}`);
@@ -510,23 +512,40 @@ app.get('/api/server/install-status', (req, res) => {
 });
 
 // API: 立即存档 (向服务器发送 SaveWorld 命令)
-app.post('/api/server/save', (req, res) => {
+app.post('/api/server/save', async (req, res) => {
     if (!serverProcess || serverStatus !== 'running') {
         return res.status(400).json({ error: '服务器未运行，无法存档' });
     }
 
-    // 这里由于当前未集成 RCON 库，无法直接发送 RCON 命令。
-    // 在 Windows 环境下，最稳妥的做法是通过 RCON 发送 'SaveWorld'
-    // 作为占位，这里可以返回一个提示，或者记录日志，建议以后集成 RCON 后实现
-    broadcastLog('----------------------------------------');
-    broadcastLog('[系统提示] 触发了“立即存档”操作。');
-    broadcastLog('[系统提示] 暂未接入 RCON 协议，请在游戏内使用管理员命令 `cheat SaveWorld` 存档。');
-    broadcastLog('----------------------------------------');
-    
-    // 如果后续你集成了 rcon-client 库，可以在这里发送命令：
-    // await rcon.send('SaveWorld');
-    
-    res.json({ success: true, message: '已请求存档操作' });
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (!config.enableRcon) {
+            broadcastLog('----------------------------------------');
+            broadcastLog('[系统提示] 触发了“立即存档”操作，但未开启 RCON。');
+            broadcastLog('[系统提示] 请在游戏内使用管理员命令 `cheat SaveWorld` 存档，或在配置中开启 RCON。');
+            broadcastLog('----------------------------------------');
+            return res.json({ success: true, message: '未开启 RCON，仅记录操作' });
+        }
+
+        const rcon = Rcon({
+            address: '127.0.0.1',
+            password: config.adminPassword,
+            port: config.rconPort || 27020
+        });
+
+        await rcon.connect();
+        const response = await rcon.command('SaveWorld');
+        rcon.disconnect();
+
+        broadcastLog('----------------------------------------');
+        broadcastLog(`[RCON] 发送存档命令成功: ${response}`);
+        broadcastLog('----------------------------------------');
+
+        res.json({ success: true, message: '已发送存档命令' });
+    } catch (err) {
+        broadcastLog(`[RCON Error] 存档失败: ${err.message}`);
+        res.status(500).json({ error: 'RCON 命令发送失败: ' + err.message });
+    }
 });
 
 // API: 备份存档
@@ -674,14 +693,43 @@ app.get('/api/server/ip', async (req, res) => {
     }
 });
 
-// API: 获取在线玩家数 (简化版占位逻辑，ASA 实际上需要通过 RCON 查询)
-app.get('/api/server/players', (req, res) => {
+// API: 获取在线玩家数 (通过 RCON 查询)
+app.get('/api/server/players', async (req, res) => {
     if (!serverProcess || serverStatus !== 'running') {
         return res.json({ success: false, players: 0 });
     }
-    // 注意：要真正获取 ASA 在线人数，需要实现 RCON 协议连接到服务器发送 `listplayers` 命令。
-    // 这里为了演示界面效果，暂时返回一个模拟的随机数或 0。如果需要真实数据，需引入 rcon-client 库。
-    res.json({ success: true, players: 0 }); 
+
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (!config.enableRcon) {
+            return res.json({ success: false, players: 0, message: 'RCON 未开启' });
+        }
+
+        const rcon = Rcon({
+            address: '127.0.0.1',
+            password: config.adminPassword,
+            port: config.rconPort || 27020
+        });
+
+        await rcon.connect();
+        const response = await rcon.command('listplayers');
+        rcon.disconnect();
+
+        // 解析 listplayers 的返回结果
+        // 返回格式通常是 "No Players Connected" 或者一行一个玩家信息
+        if (response.includes('No Players Connected')) {
+            return res.json({ success: true, players: 0 });
+        } else {
+            // 通过换行符分割，过滤掉空行，就是玩家数量
+            const lines = response.trim().split('\n');
+            // 确保不把表头或无关信息算进去，简单算行数即可（每行一个玩家）
+            const playerCount = lines.filter(line => line.trim().length > 0 && !line.includes('No Players')).length;
+            return res.json({ success: true, players: playerCount });
+        }
+    } catch (err) {
+        // RCON 连接失败或超时
+        res.json({ success: false, players: 0, error: err.message });
+    }
 });
 
 // 删除旧的固定端口监听
