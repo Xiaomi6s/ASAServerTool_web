@@ -1,0 +1,33 @@
+{
+  "name": "asaservertool_web",
+  "version": "1.0.0",
+  "description": "本工具是专为《方舟：生存飞升》（ARK: Survival Ascended） 打造的轻量化 Web 开服管理面板。项目基于 `Node.js` + `Express` + `Bootstrap` 开发，纯 Windows 环境适配，旨在让没有专业运维知识的新手也能一键部署开服。",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "build": "pkg . -t node18-win-x64 -o build/ARK-ASA-ServerTool.exe --public"
+  },
+  "bin": "server/server.js",
+  "pkg": {
+    "scripts": "server/**/*.js",
+    "assets": [
+      "public/**/*",
+      "server/config.json"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "pidusage": "^4.0.1",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.0"
+  }
+}

@@ -1,0 +1,154 @@
+/* Custom styles */
+body {
+    background-color: #f0f2f5;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #333;
+}
+
+.custom-navbar {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+}
+
+/* 卡片样式优化 */
+.card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.custom-card-header {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+}
+
+/* Tabs 样式优化 */
+.custom-tabs {
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.custom-tabs .nav-link {
+    color: #64748b;
+    font-weight: 500;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.75rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.custom-tabs .nav-link:hover {
+    color: #3b82f6;
+    border-color: transparent;
+}
+
+.custom-tabs .nav-link.active {
+    color: #2563eb;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #2563eb;
+}
+
+/* 表单元素优化 */
+.form-label {
+    font-size: 0.9rem;
+    color: #475569;
+    margin-bottom: 0.25rem;
+}
+
+.form-control, .form-select {
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.form-text {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+}
+
+/* 按钮动画 */
+.btn {
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* 控制台终端样式优化 */
+.custom-console-header {
+    background: #1e1e1e !important;
+    border-bottom: 1px solid #333;
+}
+
+.window-controls .dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.dot-red { background-color: #ff5f56; }
+.dot-yellow { background-color: #ffbd2e; }
+.dot-green { background-color: #27c93f; }
+
+#consoleLog {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: #0d1117 !important;
+    color: #a6accd !important;
+    font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+}
+
+#consoleLog div {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+#consoleLog div:hover {
+    background-color: rgba(255,255,255,0.05);
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+#consoleLog::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+#consoleLog::-webkit-scrollbar-thumb {
+    background: #4b5563;
+}
+
+#consoleLog::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
