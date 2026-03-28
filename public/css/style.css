@@ -15,8 +15,65 @@ body {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
+/* 卡片标题栏增强 */
 .custom-card-header {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    border-bottom: none;
+}
+
+/* 标签页导航美化 */
+.nav-tabs {
+    border-bottom: 2px solid #e9ecef;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 0.75rem 1.25rem;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #495057;
+    background: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    background: transparent;
+    border: none;
+}
+
+.nav-tabs .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #0d6efd;
+    border-radius: 2px 2px 0 0;
+}
+
+/* 输入框聚焦效果优化 */
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+/* 开关按钮优化 */
+.form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    margin-top: 0.1em;
+}
+
+/* 底部保存按钮容器 */
+#new-save-btn-container {
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.03);
+    z-index: 10;
 }
 
 /* Tabs 样式优化 */
@@ -151,4 +208,22 @@ body {
 
 #consoleLog::-webkit-scrollbar-thumb:hover {
     background: #6b7280;
+}
+
+/* RCON 命令下拉列表样式优化 */
+.custom-command-select {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.custom-command-select option {
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.custom-command-select option:hover,
+.custom-command-select option:focus,
+.custom-command-select option:checked {
+    background-color: #0d6efd !important;
+    color: white !important;
 }

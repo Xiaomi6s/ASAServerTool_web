@@ -1,15 +1,15 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<!DOCTYPE html><html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARK: ASA Web 开服面板</title>
+    <!-- 设置浏览器标签页的 Favicon 图标 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2214%22 font-size=%2214%22>🚀</text></svg>">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
 </head>
 <body class="bg-light d-flex flex-column vh-100 overflow-hidden">
@@ -21,114 +21,97 @@
 </nav>
 
 <div class="container-fluid px-4 pt-4 pb-4 flex-grow-1 d-flex flex-column overflow-hidden" style="min-height: 0;">
-    <div class="row flex-grow-1 g-4 overflow-hidden" style="min-height: 0;">
-        <!-- 左侧配置与控制 -->
-        <div class="col-md-7 col-lg-8 h-100 overflow-y-auto pb-2">
-            <!-- 顶部控制卡片：高度自适应内容 -->
-            <div class="card shadow-sm mb-4 border-0 rounded-4">
-                <div class="card-header text-white d-flex justify-content-between align-items-center rounded-top-4 custom-card-header">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-server me-2"></i>服务器控制</h5>
-                    <span id="statusBadge" class="badge bg-secondary rounded-pill px-3 py-2">状态未知</span>
-                </div>
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded-3 border">
-                        <div>
-                            <span class="text-muted small d-block mb-1">服务端状态</span>
-                            <span id="installStatusText" class="fw-bold text-muted"><i class="bi bi-arrow-repeat me-1"></i>检测中...</span>
-                        </div>
-                        <button id="btnUpdate" class="btn btn-outline-primary btn-sm rounded-pill px-3" style="display: none;"><i class="bi bi-cloud-download me-1"></i><span id="btnUpdateText">下载服务端</span></button>
-                    </div>
-                    
-                    <div class="mb-4 border rounded-3 p-3 bg-white shadow-sm">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <strong class="text-secondary mb-0"><i class="bi bi-activity me-2"></i>实时状态</strong>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-light text-dark border px-2 py-1" id="serverMapBadge" style="display: none;"><i class="bi bi-map-fill me-1"></i><span id="serverMapText">未知地图</span></span>
-                                <span class="badge bg-light text-dark border px-2 py-1" id="serverAddressBadge" style="display: none;"><i class="bi bi-link-45deg me-1"></i><span id="serverIpPortText">127.0.0.1:7777</span></span>
-                                <span class="badge bg-primary rounded-pill px-2 py-1"><i class="bi bi-people-fill me-1"></i>在线人数: <span id="onlinePlayersText">0 / 0</span></span>
+    
+<div class="row flex-grow-1 g-4 overflow-hidden w-100 m-0" style="min-height: 0;">
+    <!-- 左侧：控制和配置区 (占据 8 列) -->
+    <div class="col-lg-8 col-md-12 h-100 d-flex flex-column p-0 pe-lg-3">
+        
+        <!-- 顶部：服务器控制 -->
+        <div class="card shadow-sm border-0 rounded-4 mb-3 flex-shrink-0">
+            <div class="card-header text-white d-flex justify-content-between align-items-center rounded-top-4 py-3" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-server me-2"></i>服务器控制</h5>
+                <span id="statusBadge" class="badge bg-light text-dark rounded-pill px-3 py-2 border">状态未知</span>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    <!-- 状态信息区 -->
+                    <div class="col-md-6 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded-3 border flex-shrink-0">
+                            <div>
+                                <span class="text-muted small d-block mb-1">服务端状态</span>
+                                <span id="installStatusText" class="fw-bold text-muted"><i class="bi bi-arrow-repeat me-1"></i>检测中...</span>
                             </div>
+                            <button id="btnUpdate" class="btn btn-outline-primary btn-sm rounded-pill px-3" style="display: none;"><i class="bi bi-cloud-download me-1"></i><span id="btnUpdateText">下载服务端</span></button>
                         </div>
-                        <div class="row align-items-center mb-2">
-                            <div class="col-2 text-end text-muted small">CPU</div>
-                            <div class="col-7">
-                                <div class="progress" style="height: 10px;">
-                                    <div id="cpuBar" class="progress-bar bg-info" role="progressbar" style="width: 0%;"></div>
+                        <div class="border rounded-3 p-2 bg-white shadow-sm flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong class="text-secondary mb-0"><i class="bi bi-activity me-2"></i>实时状态</strong>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-light text-dark border px-2 py-1" id="serverMapBadge" style="display: none;"><i class="bi bi-map-fill me-1"></i><span id="serverMapText">未知地图</span></span>
+                                    <span class="badge bg-light text-dark border px-2 py-1" id="serverAddressBadge" style="display: none;"><i class="bi bi-link-45deg me-1"></i><span id="serverIpPortText">127.0.0.1:7777</span></span>
+                                    <span class="badge bg-primary rounded-pill px-2 py-1"><i class="bi bi-people-fill me-1"></i><span id="onlinePlayersText">0 / 0</span></span>
                                 </div>
                             </div>
-                            <div class="col-3 text-start fw-bold small" id="cpuUsageText">0.0%</div>
-                        </div>
-                        <div class="row align-items-center">
-                            <div class="col-2 text-end text-muted small">内存</div>
-                            <div class="col-7">
-                                <div class="progress" style="height: 10px;">
-                                    <div id="memBar" class="progress-bar bg-warning" role="progressbar" style="width: 0%;"></div>
+                            <div class="row align-items-center mb-1">
+                                <div class="col-2 text-end text-muted small pe-1">CPU</div>
+                                <div class="col-5 px-1">
+                                    <div class="progress" style="height: 8px;">
+                                        <div id="cpuBar" class="progress-bar bg-info" role="progressbar" style="width: 0%;"></div>
+                                    </div>
                                 </div>
+                                <div class="col-5 text-start fw-bold small text-nowrap ps-1" id="cpuUsageText">0.0%</div>
                             </div>
-                            <div class="col-3 text-start fw-bold small" id="memUsageText">0 MB</div>
-                        </div>
-                    </div>
-                    <hr class="text-muted my-4">
-                    
-                    <!-- 主操作按钮组 -->
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <button id="btnStart" class="btn btn-success w-100 rounded-3 shadow-sm py-2 fw-bold"><i class="bi bi-play-fill me-1"></i>启动服务器</button>
-                        </div>
-                        <div class="col-6">
-                            <button id="btnStop" class="btn btn-danger w-100 rounded-3 shadow-sm py-2 fw-bold" disabled data-bs-toggle="modal" data-bs-target="#stopConfirmModal"><i class="bi bi-stop-fill me-1"></i>停止服务器</button>
+                            <div class="row align-items-center">
+                                <div class="col-2 text-end text-muted small pe-1">内存</div>
+                                <div class="col-5 px-1">
+                                    <div class="progress" style="height: 8px;">
+                                        <div id="memBar" class="progress-bar bg-warning" role="progressbar" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-5 text-start fw-bold small text-nowrap ps-1" id="memUsageText">0 GB / 0 GB</div>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- 辅助操作按钮组 -->
-                    <div class="row g-2">
-                        <div class="col-4">
-                            <button id="btnSave" class="btn btn-primary w-100 rounded-3 shadow-sm py-2 fw-bold" disabled><i class="bi bi-cloud-arrow-up-fill me-1"></i>立即存档</button>
+                    <!-- 操作按钮区 -->
+                    <div class="col-md-6 d-flex flex-column justify-content-center ps-md-4">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <button id="btnStart" class="btn btn-success w-100 rounded-3 shadow-sm py-3 fw-bold fs-6"><i class="bi bi-play-fill me-1"></i>启动服务器</button>
+                            </div>
+                            <div class="col-6">
+                                <button id="btnStop" class="btn btn-danger w-100 rounded-3 shadow-sm py-3 fw-bold fs-6" disabled="" data-bs-toggle="modal" data-bs-target="#stopConfirmModal"><i class="bi bi-stop-fill me-1"></i>停止服务器</button>
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <button id="btnBackup" class="btn btn-warning w-100 rounded-3 shadow-sm py-2 fw-bold text-dark"><i class="bi bi-archive-fill me-1"></i>一键备份</button>
-                        </div>
-                        <div class="col-4">
-                            <button id="btnRestore" class="btn btn-info w-100 rounded-3 shadow-sm py-2 fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#restoreModal"><i class="bi bi-clock-history me-1"></i>恢复存档</button>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <button id="btnSave" class="btn btn-primary w-100 rounded-3 shadow-sm py-2 fw-bold px-1 text-nowrap" style="font-size: 0.9rem;"><i class="bi bi-cloud-arrow-up-fill me-1"></i>立即存档</button>
+                            </div>
+                            <div class="col-4">
+                                <button id="btnBackup" class="btn btn-warning w-100 rounded-3 shadow-sm py-2 fw-bold text-dark px-1 text-nowrap" style="font-size: 0.9rem;"><i class="bi bi-archive-fill me-1"></i>一键备份</button>
+                            </div>
+                            <div class="col-4">
+                                <button id="btnRestore" class="btn btn-info w-100 rounded-3 shadow-sm py-2 fw-bold text-dark px-1 text-nowrap" style="font-size: 0.9rem;" data-bs-toggle="modal" data-bs-target="#restoreModal"><i class="bi bi-clock-history me-1"></i>恢复存档</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            
-            <!-- 底部配置卡片：占据左侧剩余的所有高度 -->
-            <div class="card shadow-sm border-0 rounded-4 mb-2">
-                <div class="card-header bg-white border-bottom-0 pt-3 pb-0 rounded-top-4">
-                    <ul class="nav nav-tabs card-header-tabs custom-tabs flex-wrap" id="configTabs" role="tablist">
-                        <li class="nav-item">
-                            <a class="nav-link active py-2" id="server-tab" data-bs-toggle="tab" href="#server-settings" role="tab"><i class="bi bi-server me-1"></i>服务器设置</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link py-2" id="player-tab" data-bs-toggle="tab" href="#player" role="tab"><i class="bi bi-person me-1"></i>玩家</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link py-2" id="creature-tab" data-bs-toggle="tab" href="#creature" role="tab"><i class="bi bi-bug me-1"></i>生物</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link py-2" id="structure-tab" data-bs-toggle="tab" href="#structure" role="tab"><i class="bi bi-house me-1"></i>建筑</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link py-2" id="world-tab" data-bs-toggle="tab" href="#world" role="tab"><i class="bi bi-globe me-1"></i>世界</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link py-2" id="rules-tab" data-bs-toggle="tab" href="#rules" role="tab"><i class="bi bi-shield-check me-1"></i>规则</a>
-                        </li>
-                    </ul>
+        <!-- 底部：配置表单区 -->
+        <form id="configForm" class="flex-grow-1 overflow-y-auto custom-scrollbar pe-2 d-flex flex-column gap-3 pb-3" style="min-height: 0;">
+            <!-- 第一栏：服务器基础设置 -->
+            <div class="card shadow-sm border-0 rounded-4 flex-shrink-0">
+                <div class="card-header text-white border-bottom-0 py-3 rounded-top-4" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-hdd-network me-2"></i>服务设置</h6>
                 </div>
-                <div class="card-body p-0 bg-white rounded-bottom-4">
-                    <form id="configForm" class="mb-0">
-                        <div class="tab-content p-4" id="configTabsContent">
-                            
-                            <!-- 服务器设置 Tab -->
-                            <div class="tab-pane fade show active" id="server-settings" role="tabpanel">
+                <div class="card-body p-4" id="new-server-settings-container">
+                    
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">服务器名称 (SessionName)</label>
-                                    <input type="text" class="form-control" id="serverName" required value="Objc ASA Server">
-                                    <div class="form-text">服务器在大厅中显示的名称。</div>
+                                    <input type="text" class="form-control" id="serverName" required="" value="Objc ASA Server">
+                                    <div class="form-text text-primary">服务器在大厅中显示的名称。</div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
@@ -151,7 +134,7 @@
                                             <option value="Genesis_WP">Genesis_WP (创世纪1 - 暂未发布)</option>
                                             <option value="Gen2_WP">Gen2_WP (创世纪2 - 暂未发布)</option>
                                         </select>
-                                        <div class="form-text">选择要加载的官方地图。</div>
+                                        <div class="form-text text-danger fw-semibold">选择要加载的官方地图（切换地图会导致当前存档不再显示，需谨慎）。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
@@ -163,7 +146,7 @@
                                     <div class="col">
                                         <label class="form-label fw-bold">管理员密码 (ServerAdminPassword)</label>
                                         <input type="text" class="form-control" id="adminPassword">
-                                        <div class="form-text">使用管理员命令 (cheat) 所需的密码。</div>
+                                        <div class="form-text text-danger fw-semibold">使用管理员命令 (cheat) 所需的密码，请妥善保管。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
@@ -181,29 +164,37 @@
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">MOD IDs (-mods)</label>
                                     <input type="text" class="form-control" id="mods" placeholder="例如: 987654,123456">
-                                    <div class="form-text">在此输入要加载的 Mod ID，多个用逗号分隔。</div>
+                                    <div class="form-text text-primary">在此输入要加载的 Mod ID，多个用逗号分隔。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="noBattlEye">
-                                    <label class="form-check-label fw-bold">禁用反作弊 (-NoBattlEye)</label>
-                                    <div class="form-text">禁用官方的 BattlEye 反作弊系统。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="noBattlEye" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-warning text-dark ps-2 w-100">禁用反作弊 (-NoBattlEye)</label>
+                                    <div class="form-text text-warning text-dark ps-2">禁用官方的 BattlEye 反作弊系统（如需跨平台或非正版互联通常需要勾选）。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="autoManagedMods">
-                                    <label class="form-check-label fw-bold">自动管理 Mods (-automanagedmods)</label>
-                                    <div class="form-text">允许服务器在启动时自动下载和更新 Mod。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="autoManagedMods" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold ps-2 w-100">自动管理 Mods (-automanagedmods)</label>
+                                    <div class="form-text ps-2">允许服务器在启动时自动下载和更新 Mod。</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">自动存档间隔 (分钟)</label>
                                     <input type="number" class="form-control" id="autoSavePeriod" value="15">
                                     <div class="form-text">服务器自动将游戏状态保存到磁盘的时间间隔。</div>
                                 </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">自定义存档备份目录</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="backupPath" placeholder="留空则默认保存在项目根目录的 backups 文件夹">
+                                        <button class="btn btn-outline-secondary" type="button" id="btnSelectBackupDir" title="在服务器端选择文件夹"><i class="bi bi-folder2-open"></i> 选择目录</button>
+                                    </div>
+                                    <div class="form-text text-primary">点击一键备份时，ZIP压缩包的存放位置（绝对路径，如 D:\ASABackups）。</div>
+                                </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">启用 RCON</label>
-                                        <div class="form-check form-switch mt-2">
-                                            <input class="form-check-input" type="checkbox" id="enableRcon" checked>
-                                            <label class="form-check-label">开启 RCON 远程控制 (推荐开启以获取在线人数和存档)</label>
+                                        <div class="form-check form-switch mt-2 ps-5">
+                                            <input class="form-check-input ms-n5 mt-1" type="checkbox" id="enableRcon" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                            <label class="form-check-label text-success fw-semibold ps-2 w-100">开启 RCON 远程控制 (强烈推荐开启以获取在线人数和实现安全存档)</label>
                                         </div>
                                     </div>
                                     <div class="col">
@@ -217,49 +208,89 @@
                                     <div class="form-text">添加额外的命令行参数，以空格分隔。</div>
                                 </div>
                             </div>
+                    <div class="p-3 bg-light border-top rounded-bottom-4" id="new-save-btn-container">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button type="button" id="btnLoadConfig" class="btn btn-outline-primary w-100 rounded-pill shadow-sm py-2 fw-bold"><i class="bi bi-arrow-clockwise me-2"></i>重新加载配置</button>
+                            </div>
+                            <div class="col-6">
+                                <button type="submit" class="btn btn-primary w-100 rounded-pill shadow-sm py-2 fw-bold"><i class="bi bi-save me-2"></i>保存所有配置</button>
+                            </div>
+                        </div>
+                    </div>
+            </div>
 
+            <!-- 第二栏：游戏规则设置 -->
+            <div class="card shadow-sm border-0 rounded-4 flex-shrink-0">
+                <!-- 新增的统一头部 -->
+                <div class="card-header text-white border-bottom-0 py-3 rounded-top-4" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-sliders me-2"></i>游戏规则设置</h6>
+                </div>
+                <!-- 原来的 Tab 导航移到这里，并去掉上圆角和边框 -->
+                <div class="bg-white pt-2 border-bottom" id="new-tabs-container">
+                    <ul class="nav nav-tabs custom-tabs flex-wrap border-0 px-3" id="configTabs" role="tablist">
+                        
+                        <li class="nav-item">
+                            <a class="nav-link py-2 active fw-bold text-secondary" id="player-tab" data-bs-toggle="tab" href="#player" role="tab"><i class="bi bi-person me-1"></i>玩家</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-2 fw-bold text-secondary" id="creature-tab" data-bs-toggle="tab" href="#creature" role="tab"><i class="bi bi-bug me-1"></i>生物</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-2 fw-bold text-secondary" id="structure-tab" data-bs-toggle="tab" href="#structure" role="tab"><i class="bi bi-house me-1"></i>建筑</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-2 fw-bold text-secondary" id="world-tab" data-bs-toggle="tab" href="#world" role="tab"><i class="bi bi-globe me-1"></i>世界</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-2 fw-bold text-secondary" id="rules-tab" data-bs-toggle="tab" href="#rules" role="tab"><i class="bi bi-shield-check me-1"></i>规则</a>
+                        </li>
+                    </ul></div>
+                    <div class="card-body p-0 bg-white rounded-bottom-4" id="new-tab-content-container">
+                    <div class="tab-content p-4 pt-3" id="configTabsContent">
+                            
                             <!-- 玩家 Tab -->
-                            <div class="tab-pane fade" id="player" role="tabpanel">
+                            <div class="tab-pane fade show active" id="player" role="tabpanel">
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">伤害</label>
                                         <input type="number" step="0.1" class="form-control" id="playerDamage" value="1.0">
-                                        <div class="form-text">玩家造成的物理伤害倍率。数值越大，伤害越高。</div>
+                                        <div class="form-text text-primary">玩家造成的物理伤害倍率。数值越大，伤害越高。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">承受伤害系数</label>
                                         <input type="number" step="0.1" class="form-control" id="playerResistance" value="1.0">
-                                        <div class="form-text">玩家受到伤害的倍率。数值越小，玩家受到的伤害越低（越抗揍）。</div>
+                                        <div class="form-text text-success fw-semibold">玩家受到伤害的倍率。数值越小，玩家受到的伤害越低（越抗揍）。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">水分消耗速度</label>
                                         <input type="number" step="0.1" class="form-control" id="playerWaterDrain" value="1.0">
-                                        <div class="form-text">玩家口渴的速度倍率。数值越小，水分流失越慢。</div>
+                                        <div class="form-text text-info text-dark">玩家口渴的速度倍率。数值越小，水分流失越慢。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">食物消耗速度</label>
                                         <input type="number" step="0.1" class="form-control" id="playerFoodDrain" value="1.0">
-                                        <div class="form-text">玩家饥饿的速度倍率。数值越小，食物流失越慢。</div>
+                                        <div class="form-text text-info text-dark">玩家饥饿的速度倍率。数值越小，食物流失越慢。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">体力消耗速度</label>
                                         <input type="number" step="0.1" class="form-control" id="playerStaminaDrain" value="1.0">
-                                        <div class="form-text">玩家奔跑、攻击时的体力消耗倍率。数值越小，体力消耗越慢。</div>
+                                        <div class="form-text text-success fw-semibold">玩家奔跑、攻击时的体力消耗倍率。数值越小，体力消耗越慢。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">生命恢复速度</label>
                                         <input type="number" step="0.1" class="form-control" id="playerHealthRecovery" value="1.0">
-                                        <div class="form-text">玩家脱离战斗后的回血速度。数值越大，回血越快。</div>
+                                        <div class="form-text text-danger fw-semibold">玩家脱离战斗后的回血速度。数值越大，回血越快。</div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">采集伤害系数</label>
                                     <input type="number" step="0.1" class="form-control" id="playerHarvestingDamage" value="1.0">
-                                    <div class="form-text">玩家使用工具采集资源时的破坏力倍率。数值越大，单次敲击获取的资源往往越多，但也更容易敲碎资源节点。</div>
+                                    <div class="form-text text-warning text-dark">玩家使用工具采集资源时的破坏力倍率。数值越大，单次敲击获取的资源往往越多，但也更容易敲碎资源节点。</div>
                                 </div>
                             </div>
 
@@ -269,48 +300,48 @@
                                     <div class="col">
                                         <label class="form-label fw-bold">最大生成数量</label>
                                         <input type="number" step="0.1" class="form-control" id="dinoCount" value="1.0">
-                                        <div class="form-text">全图野生恐龙的生成密度倍率。数值越大，地图上的野生恐龙越多。</div>
+                                        <div class="form-text text-danger fw-semibold">全图野生恐龙的生成密度倍率。数值越大，服务器负载越高，容易卡顿。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">最大驯服数量</label>
                                         <input type="number" class="form-control" id="maxTamedDinos" value="5000">
-                                        <div class="form-text">服务器允许驯服的恐龙总数上限。达到上限后将无法再驯服新恐龙。</div>
+                                        <div class="form-text text-primary">服务器允许驯服的恐龙总数上限。达到上限后将无法再驯服新恐龙。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">伤害</label>
                                         <input type="number" step="0.1" class="form-control" id="dinoDamage" value="1.0">
-                                        <div class="form-text">恐龙的基础伤害倍率。数值越大，恐龙攻击力越高。</div>
+                                        <div class="form-text text-danger fw-semibold">恐龙的基础伤害倍率。数值越大，恐龙攻击力越高。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">承受伤害系数</label>
                                         <input type="number" step="0.1" class="form-control" id="dinoResistance" value="1.0">
-                                        <div class="form-text">恐龙受到的伤害倍率。数值越小，恐龙越抗揍（受到的伤害越低）。</div>
+                                        <div class="form-text text-success fw-semibold">恐龙受到的伤害倍率。数值越小，恐龙越抗揍（受到的伤害越低）。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">食物消耗速度</label>
                                         <input type="number" step="0.1" class="form-control" id="dinoFoodDrain" value="1.0">
-                                        <div class="form-text">恐龙的食物消耗速度。数值越大，饥饿越快（也会加快驯服速度）。</div>
+                                        <div class="form-text text-warning text-dark">恐龙的食物消耗速度。数值越大，饥饿越快（也会加快驯服速度）。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">体力消耗速度</label>
                                         <input type="number" step="0.1" class="form-control" id="dinoStaminaDrain" value="1.0">
-                                        <div class="form-text">恐龙冲刺或攻击的体力消耗速度。数值越小，恐龙能跑得越久。</div>
+                                        <div class="form-text text-success fw-semibold">恐龙冲刺或攻击的体力消耗速度。数值越小，恐龙能跑得越久。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">生命恢复速度</label>
                                         <input type="number" step="0.1" class="form-control" id="dinoHealthRecovery" value="1.0">
-                                        <div class="form-text">恐龙生命值自然恢复的速度。数值越大，回血越快。</div>
+                                        <div class="form-text text-danger fw-semibold">恐龙生命值自然恢复的速度。数值越大，回血越快。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">采集伤害系数</label>
                                         <input type="number" step="0.1" class="form-control" id="dinoHarvestingDamage" value="3.2">
-                                        <div class="form-text">恐龙采集资源时的破坏力倍率。数值越大，单口咬树/石头的产出往往越多。</div>
+                                        <div class="form-text text-primary">恐龙采集资源时的破坏力倍率。数值越大，单口咬树/石头的产出往往越多。</div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -318,75 +349,75 @@
                                     <input type="number" step="0.1" class="form-control" id="dinoTurretDamage" value="1.0">
                                     <div class="form-text">自动炮台对恐龙造成的伤害倍率。数值越大，炮台打龙越疼。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="disableTame">
-                                    <label class="form-check-label fw-bold">禁止驯养</label>
-                                    <div class="form-text">开启后将无法驯服任何恐龙。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="disableTame" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">禁止驯养</label>
+                                    <div class="form-text ps-2">开启后将无法驯服任何恐龙。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="disableRiding">
-                                    <label class="form-check-label fw-bold">禁止骑乘</label>
-                                    <div class="form-text">开启后将无法骑乘任何恐龙。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="disableRiding" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">禁止骑乘</label>
+                                    <div class="form-text ps-2">开启后将无法骑乘任何恐龙。</div>
                                 </div>
                                 <h6 class="border-bottom pb-2 mb-3 mt-4">繁殖相关</h6>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">交配间隔</label>
                                         <input type="number" step="0.01" class="form-control" id="matingInterval" value="1.0">
-                                        <div class="form-text">恐龙再次交配所需的冷却时间倍率(越低越快，例如 0.1)。</div>
+                                        <div class="form-text text-success fw-semibold">恐龙再次交配所需的冷却时间倍率(越低越快，例如 0.1)。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">交配速度</label>
                                         <input type="number" step="0.1" class="form-control" id="matingSpeed" value="1.0">
-                                        <div class="form-text">恐龙交配进度条填满的速度倍率(越高越快)。</div>
+                                        <div class="form-text text-danger fw-semibold">恐龙交配进度条填满的速度倍率(越高越快)。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">蛋孵化速度/怀孕速度</label>
                                         <input type="number" step="0.1" class="form-control" id="eggHatchSpeed" value="1.0">
-                                        <div class="form-text">受精蛋孵化或哺乳动物怀孕的速度倍率(越高越快)。</div>
+                                        <div class="form-text text-danger fw-semibold">受精蛋孵化或哺乳动物怀孕的速度倍率(越高越快)。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">幼龙成长速度</label>
                                         <input type="number" step="0.1" class="form-control" id="babyMatureSpeed" value="1.0">
-                                        <div class="form-text">幼龙成长为成年龙的速度倍率(越高越快)。</div>
+                                        <div class="form-text text-danger fw-semibold">控制恐龙宝宝从幼年长到成年的速度倍率。数值越大，成长越快（例如设为10，成长速度是原来的10倍）。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">单次留痕增加倍率</label>
                                         <input type="number" step="0.1" class="form-control" id="babyImprintAmountMultiplier" value="1.0">
-                                        <div class="form-text">每次留痕增加的进度倍率（例如设为10，单次留痕可能直接达到100%）。</div>
+                                        <div class="form-text text-danger fw-semibold">每次留痕增加的进度倍率（例如设为10，单次留痕可能直接达到100%）。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">留痕属性加成</label>
                                         <input type="number" step="0.1" class="form-control" id="babyImprintingStatScale" value="1.0">
-                                        <div class="form-text">每次留痕成功后获得的属性提升倍率。</div>
+                                        <div class="form-text text-danger fw-semibold">每次留痕成功后获得的属性提升倍率。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">留痕间隔</label>
                                         <input type="number" step="0.01" class="form-control" id="babyCuddleInterval" value="1.0">
-                                        <div class="form-text">幼龙需要照顾的间隔时间倍率(越低间隔越短，例如 0.1)。</div>
+                                        <div class="form-text text-success fw-semibold">幼龙需要照顾的间隔时间倍率(越低间隔越短，例如 0.1)。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">幼龙食物消耗速度</label>
                                         <input type="number" step="0.1" class="form-control" id="babyFoodConsumptionSpeed" value="1.0">
-                                        <div class="form-text">幼龙在成长过程中的食物消耗速度倍率。</div>
+                                        <div class="form-text text-info text-dark">幼龙在成长过程中的食物消耗速度倍率。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">留痕宽容度</label>
                                         <input type="number" step="0.1" class="form-control" id="babyCuddleGracePeriod" value="1.0">
-                                        <div class="form-text">错过留痕时间后，留痕度下降前的宽限时间倍率。</div>
+                                        <div class="form-text text-primary">错过留痕时间后，留痕度下降前的宽限时间倍率。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">留痕流失速度</label>
                                         <input type="number" step="0.1" class="form-control" id="babyCuddleLoseImprintQualitySpeed" value="1.0">
-                                        <div class="form-text">错过留痕后，留痕度下降的速度倍率。</div>
+                                        <div class="form-text text-warning text-dark">错过留痕后，留痕度下降的速度倍率。</div>
                                     </div>
                                 </div>
                             </div>
@@ -397,23 +428,23 @@
                                     <div class="col">
                                         <label class="form-label fw-bold">建筑伤害</label>
                                         <input type="number" step="0.1" class="form-control" id="structureDamage" value="1.0">
-                                        <div class="form-text">建筑造成的伤害倍率(如拒马等)。</div>
+                                        <div class="form-text text-danger fw-semibold">建筑造成的伤害倍率(如拒马等)。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">建筑承受伤害</label>
                                         <input type="number" step="0.1" class="form-control" id="structureResistance" value="1.0">
-                                        <div class="form-text">建筑受到攻击时的伤害系数。</div>
+                                        <div class="form-text text-success fw-semibold">建筑受到攻击时的伤害系数，越低越难被拆。</div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">平台鞍建筑倍率</label>
                                     <input type="number" step="0.1" class="form-control" id="platformMaxStructuresMultiplier" value="1.0">
-                                    <div class="form-text">允许在风神翼龙等平台鞍上放置的建筑数量上限倍率。</div>
+                                    <div class="form-text text-primary">允许在风神翼龙等平台鞍上放置的建筑数量上限倍率。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="disableStructurePlacementCollision">
-                                    <label class="form-check-label fw-bold">禁用建筑碰撞</label>
-                                    <div class="form-text">允许建筑穿模放置，方便建造。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="disableStructurePlacementCollision" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">禁用建筑碰撞</label>
+                                    <div class="form-text ps-2">允许建筑穿模放置，极大方便建造（推荐开启）。</div>
                                 </div>
                             </div>
 
@@ -423,28 +454,76 @@
                                     <div class="col">
                                         <label class="form-label fw-bold">白天流逝速度</label>
                                         <input type="number" step="0.1" class="form-control" id="dayTimeSpeed" value="1.0">
-                                        <div class="form-text">白天时间流逝的倍率。数值越小，白天持续的时间越长（例如设为 0.5，白天时间翻倍）。</div>
+                                        <div class="form-text text-info text-dark">白天时间流逝的倍率。数值越小，白天持续的时间越长（例如设为 0.5，白天时间翻倍）。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">夜晚流逝速度</label>
                                         <input type="number" step="0.1" class="form-control" id="nightTimeSpeed" value="1.0">
-                                        <div class="form-text">夜晚时间流逝的倍率。数值越大，夜晚过得越快（例如设为 5，黑夜一眨眼就过去）。</div>
+                                        <div class="form-text text-info text-dark">夜晚时间流逝的倍率。数值越大，夜晚过得越快（例如设为 5，黑夜一眨眼就过去）。</div>
                                     </div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="showMapPlayerLocation" checked>
-                                    <label class="form-check-label fw-bold">在地图上显示玩家位置</label>
-                                    <div class="form-text">打开地图(M)时显示自己的图标位置，路痴必备。</div>
+                                <div class="row mb-3">
+                                    <div class="col">
+                                        <label class="form-label fw-bold">资源重生周期系数</label>
+                                        <input type="number" step="0.1" class="form-control" id="resourcesRespawnPeriodMultiplier" value="1.0">
+                                        <div class="form-text text-success">数值越小，资源刷新越快。</div>
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label fw-bold">资源防刷新半径</label>
+                                        <input type="number" step="0.1" class="form-control" id="resourceNoReplenishRadiusPlayers" value="1.0">
+                                        <div class="form-text text-info">玩家建筑附近的资源不刷新半径，数值越小资源离家越近。</div>
+                                    </div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="forceAllowCaveFlyers">
-                                    <label class="form-check-label fw-bold">强制允许洞穴飞行</label>
-                                    <div class="form-text">开启后，允许骑乘飞行生物（如无齿翼龙）进入矿洞内部。</div>
+                                <div class="row mb-3">
+                                    <div class="col">
+                                        <label class="form-label fw-bold">农作物生长速度</label>
+                                        <input type="number" step="0.1" class="form-control" id="cropGrowthSpeedMultiplier" value="1.0">
+                                        <div class="form-text">数值越大，农作物生长越快。</div>
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label fw-bold">排泄间隔系数</label>
+                                        <input type="number" step="0.1" class="form-control" id="poopIntervalMultiplier" value="1.0">
+                                        <div class="form-text">数值越小排便越频繁。</div>
+                                    </div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="allowFlyerCarryPvE" checked>
-                                    <label class="form-check-label fw-bold">允许 PvE 飞行生物抓取</label>
-                                    <div class="form-text">在 PVE 模式下，允许老鹰、风神等飞行生物抓取野生恐龙。</div>
+                                <div class="row mb-3">
+                                    <div class="col">
+                                        <label class="form-label fw-bold">产蛋间隔系数</label>
+                                        <input type="number" step="0.1" class="form-control" id="layEggIntervalMultiplier" value="1.0">
+                                        <div class="form-text">数值越小产蛋越快。</div>
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label fw-bold">全局腐坏时间系数</label>
+                                        <input type="number" step="0.1" class="form-control" id="globalSpoilingTimeMultiplier" value="1.0">
+                                        <div class="form-text">数值越大物品腐坏越慢。</div>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col">
+                                        <label class="form-label fw-bold">物品分解时间系数</label>
+                                        <input type="number" step="0.1" class="form-control" id="globalItemDecompositionTimeMultiplier" value="1.0">
+                                        <div class="form-text">掉落物品在地上的保留时间，数值越大越久。</div>
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label fw-bold">尸体分解时间系数</label>
+                                        <input type="number" step="0.1" class="form-control" id="globalCorpseDecompositionTimeMultiplier" value="1.0">
+                                        <div class="form-text">尸体/死亡包的保留时间，数值越大越久。</div>
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="showMapPlayerLocation" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">在地图上显示玩家位置</label>
+                                    <div class="form-text ps-2">打开地图(M)时显示自己的图标位置，路痴必备。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="forceAllowCaveFlyers" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-warning ps-2 w-100">强制允许洞穴飞行</label>
+                                    <div class="form-text ps-2">开启后，允许骑乘飞行生物（如无齿翼龙）进入矿洞内部，会降低矿洞难度。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="allowFlyerCarryPvE" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">允许 PvE 飞行生物抓取</label>
+                                    <div class="form-text ps-2">在 PVE 模式下，允许老鹰、风神等飞行生物抓取野生恐龙。</div>
                                 </div>
                             </div>
 
@@ -454,163 +533,219 @@
                                     <div class="col">
                                         <label class="form-label fw-bold">经验值系数</label>
                                         <input type="number" step="0.1" class="form-control" id="xpMultiplier" value="1.0">
-                                        <div class="form-text">获取经验的速度倍率。数值越大，升级越快。</div>
+                                        <div class="form-text text-danger fw-semibold">获取经验的速度倍率。数值越大，升级越快。</div>
                                     </div>
                                     <div class="col">
                                         <label class="form-label fw-bold">驯养速度系数</label>
                                         <input type="number" step="0.1" class="form-control" id="tamingMultiplier" value="10.0">
-                                        <div class="form-text">恐龙驯服速度倍率。数值越大，喂食后驯服进度涨得越快。</div>
+                                        <div class="form-text text-danger fw-semibold">恐龙驯服速度倍率。数值越大，喂食后驯服进度涨得越快。</div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">采集系数</label>
                                         <input type="number" step="0.1" class="form-control" id="harvestMultiplier" value="6.0">
-                                        <div class="form-text">全局资源采集数量倍率。数值越大，砍树/砸石头获得的资源总量越多。</div>
+                                        <div class="form-text text-danger fw-semibold">全局资源采集数量倍率。数值越大，砍树/砸石头获得的资源总量越多。</div>
                                     </div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="allowSpeedLeveling">
-                                    <label class="form-check-label fw-bold">允许加移速点数</label>
-                                    <div class="form-text">开启后，允许玩家升级移动速度属性（ASA 默认是关闭的）。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="allowSpeedLeveling" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">允许加移速点数</label>
+                                    <div class="form-text ps-2">开启后，允许玩家升级移动速度属性（ASA 默认是关闭的）。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="allowFlyerSpeedLeveling">
-                                    <label class="form-check-label fw-bold">允许飞行生物加移速</label>
-                                    <div class="form-text">开启后，允许给飞行恐龙（如无齿翼龙、老鹰）升级移动速度属性。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="allowFlyerSpeedLeveling" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">允许飞行生物加移速</label>
+                                    <div class="form-text ps-2">开启后，允许给飞行恐龙（如无齿翼龙、老鹰）升级移动速度属性。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="maximizeDifficulty" checked>
-                                    <label class="form-check-label fw-bold">最大难度</label>
-                                    <div class="form-text">强制野生恐龙最高等级达到 150 级，无视难度等级设定。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="maximizeDifficulty" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">最大难度</label>
+                                    <div class="form-text ps-2">强制野生恐龙最高等级达到 150 级，无视难度等级设定。</div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col">
                                         <label class="form-label fw-bold">难度等级 (如果不是最高)</label>
                                         <input type="number" step="0.1" class="form-control" id="difficultyOffset" value="0.2">
-                                        <div class="form-text">调整游戏难度和野生恐龙等级基数 (0.01 - 1.0)。</div>
+                                        <div class="form-text text-warning text-dark">调整游戏难度和野生恐龙等级基数 (0.01 - 1.0)。</div>
                                     </div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enablePvE" checked>
-                                    <label class="form-check-label fw-bold">PVE模式</label>
-                                    <div class="form-text">开启玩家对抗环境模式，禁止玩家或部落之间互相伤害/拆家。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="enablePvE" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">PVE模式</label>
+                                    <div class="form-text ps-2">开启玩家对抗环境模式，禁止玩家或部落之间互相伤害/拆家。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="hardcoreMode">
-                                    <label class="form-check-label fw-bold">硬汉模式</label>
-                                    <div class="form-text">死亡后角色数据将被重置，一切从零开始。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="hardcoreMode" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">硬汉模式</label>
+                                    <div class="form-text ps-2">死亡后角色数据将被重置，一切从零开始（极其硬核）。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="allowUnlimitedRespecs">
-                                    <label class="form-check-label fw-bold">允许多次重置技能点</label>
-                                    <div class="form-text">允许使用遗忘汤无限次洗点。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="allowUnlimitedRespecs" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">允许多次重置技能点</label>
+                                    <div class="form-text ps-2">允许使用遗忘汤无限次洗点。</div>
                                 </div>
                                 
                                 <h6 class="border-bottom pb-2 mb-3 mt-4">高级规则</h6>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="allowThirdPerson" checked>
-                                    <label class="form-check-label fw-bold">允许第三人称视角</label>
-                                    <div class="form-text">允许玩家通过快捷键切换到第三人称视角。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="showFloatingDamageText" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">显示浮动伤害</label>
+                                    <div class="form-text ps-2">在攻击时显示具体的伤害数字（RPG风格伤害显示）。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="globalVoiceChat">
-                                    <label class="form-check-label fw-bold">启用全服语音聊天</label>
-                                    <div class="form-text">开启后，所有人都能听到语音。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="allowThirdPerson" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">允许第三人称视角</label>
+                                    <div class="form-text ps-2">允许玩家通过快捷键切换到第三人称视角。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="proximityChat">
-                                    <label class="form-check-label fw-bold">启用本地文字聊天</label>
-                                    <div class="form-text">文字聊天仅附近的人可见。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="globalVoiceChat" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold ps-2 w-100">启用全服语音聊天</label>
+                                    <div class="form-text ps-2">开启后，所有人都能听到语音。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="alwaysNotifyPlayerJoin" checked>
-                                    <label class="form-check-label fw-bold">玩家进入提醒</label>
-                                    <div class="form-text">玩家加入服务器时在公屏提示。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="proximityChat" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold ps-2 w-100">启用本地文字聊天</label>
+                                    <div class="form-text ps-2">文字聊天仅附近的人可见。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="alwaysNotifyPlayerLeft">
-                                    <label class="form-check-label fw-bold">玩家离开提醒</label>
-                                    <div class="form-text">玩家退出服务器时在公屏提示。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="alwaysNotifyPlayerJoin" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-info ps-2 w-100">玩家进入提醒</label>
+                                    <div class="form-text ps-2">玩家加入服务器时在公屏提示。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="serverAdminLog">
-                                    <label class="form-check-label fw-bold">管理员日志</label>
-                                    <div class="form-text">记录管理员使用控制台命令的日志。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="alwaysNotifyPlayerLeft" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-info ps-2 w-100">玩家离开提醒</label>
+                                    <div class="form-text ps-2">玩家退出服务器时在公屏提示。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enableCrosshair" checked>
-                                    <label class="form-check-label fw-bold">启用准星</label>
-                                    <div class="form-text">在屏幕中心显示瞄准准星。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="serverAdminLog" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-warning ps-2 w-100">管理员日志 (ServerAdminLog)</label>
+                                    <div class="form-text ps-2">在聊天框中显示管理员使用的作弊命令（需要客户端勾选设置中的相应选项才能看到）。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="forceNoHUD">
-                                    <label class="form-check-label fw-bold">强制无HUD</label>
-                                    <div class="form-text">强制隐藏游戏界面上的所有状态栏信息。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="enableCrosshair" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">启用准星</label>
+                                    <div class="form-text ps-2">在屏幕中心显示瞄准准星。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="preventDownloadSurvivors">
-                                    <label class="form-check-label fw-bold">禁止下载生存者</label>
-                                    <div class="form-text">禁止玩家从其他方舟服务器导入角色。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="forceNoHUD" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">强制无HUD</label>
+                                    <div class="form-text ps-2">强制隐藏游戏界面上的所有状态栏信息。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="preventDownloadDinos">
-                                    <label class="form-check-label fw-bold">禁止下载恐龙</label>
-                                    <div class="form-text">禁止玩家从其他方舟服务器导入恐龙。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="preventDownloadSurvivors" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">禁止下载生存者</label>
+                                    <div class="form-text ps-2">禁止玩家从其他方舟服务器导入角色。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="preventDownloadItems">
-                                    <label class="form-check-label fw-bold">禁止下载物品</label>
-                                    <div class="form-text">禁止玩家从其他方舟服务器导入物品。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="preventDownloadDinos" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">禁止下载恐龙</label>
+                                    <div class="form-text ps-2">禁止玩家从其他方舟服务器导入恐龙。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="noTributeDownloads">
-                                    <label class="form-check-label fw-bold">禁止下载贡品</label>
-                                    <div class="form-text">禁止通过方舟终端下载物品和恐龙。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="preventDownloadItems" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">禁止下载物品</label>
+                                    <div class="form-text ps-2">禁止玩家从其他方舟服务器导入物品。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enablePvPGamma" checked>
-                                    <label class="form-check-label fw-bold">PVP模式启用伽马</label>
-                                    <div class="form-text">允许在PVP模式下使用 Gamma 命令调节亮度。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="noTributeDownloads" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">禁止下载贡品</label>
+                                    <div class="form-text ps-2">禁止通过方舟终端下载物品和恐龙。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="showCreativeMode">
-                                    <label class="form-check-label fw-bold">启用建造模式</label>
-                                    <div class="form-text">允许管理员使用建造模式 (GCM)。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="enablePvPGamma" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">PVP模式启用伽马</label>
+                                    <div class="form-text ps-2">允许在PVP模式下使用 Gamma 命令调节亮度。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="disableLootCrates">
-                                    <label class="form-check-label fw-bold">禁用补给箱</label>
-                                    <div class="form-text">地图上将不再生成光柱空投。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="showCreativeMode" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">启用建造模式</label>
+                                    <div class="form-text ps-2">允许管理员使用建造模式 (GCM)。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="disableFriendlyFire">
-                                    <label class="form-check-label fw-bold">禁用队友伤害</label>
-                                    <div class="form-text">同一部落的玩家和恐龙互相攻击不会造成伤害。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="disableLootCrates" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-danger ps-2 w-100">禁用补给箱</label>
+                                    <div class="form-text ps-2">地图上将不再生成光柱空投。</div>
                                 </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="useSingleplayerSettings">
-                                    <label class="form-check-label fw-bold">使用单人模式难度设置</label>
-                                    <div class="form-text">启用后将自动调整多项倍率，适合单人或极少数人的小团队。</div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="disableFriendlyFire" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">禁用队友伤害</label>
+                                    <div class="form-text ps-2">同一部落的玩家和恐龙互相攻击不会造成伤害。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="allowCaveBuildingPvE" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">允许 PVE 洞穴内建筑</label>
+                                    <div class="form-text ps-2">允许玩家在 PVE 模式下的洞穴内建造建筑。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="enableCryoSicknessPVE" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-warning ps-2 w-100">开启 PVE 低温症</label>
+                                    <div class="form-text ps-2">开启后 PVE 模式下释放恐龙会有低温症惩罚。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="disableCryopodFridgeRequirement" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">禁用低温舱冰箱限制</label>
+                                    <div class="form-text ps-2">允许在没有低温冰箱或发电机供电的地方扔出低温舱里的恐龙。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="bPvEDisableFriendlyFire" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">PVE模式禁用队友伤害</label>
+                                    <div class="form-text ps-2">PVE模式下部落成员之间互相攻击不会造成伤害。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="useForceRespawnDinos" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-warning ps-2 w-100">强制刷新野生恐龙</label>
+                                    <div class="form-text ps-2">服务器启动时强制刷新地图上的野生恐龙 (-ForceRespawnDinos)。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="disableDinoDecayPvE" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">禁用 PVE 恐龙腐坏/解权</label>
+                                    <div class="form-text ps-2">防止 PVE 模式下长期不上线导致恐龙自动死亡。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="allowAnyoneBabyImprintCuddle" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">允许任何人留痕</label>
+                                    <div class="form-text ps-2">部落内的任何人都可以进行幼龙的留痕和抚养操作。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="preventOfflinePvP" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">防止离线 PVP</label>
+                                    <div class="form-text ps-2">玩家下线后，建筑和恐龙将处于无敌状态。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="useCorpseLocator" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">使用尸体定位器</label>
+                                    <div class="form-text ps-2">死亡后会在尸体上方显示一道光柱，方便找回背包。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="disableWeatherFog" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">禁用天气雾</label>
+                                    <div class="form-text ps-2">彻底关闭地图上的雾天效果，视野更清晰。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="crossplay" checked="" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-success ps-2 w-100">开启跨平台联机 (Crossplay)</label>
+                                    <div class="form-text ps-2">允许 Steam, Xbox, PS 等不同平台的玩家共同游玩。</div>
+                                </div>
+                                <div class="form-check form-switch mb-3 ps-5">
+                                    <input class="form-check-input ms-n5 mt-1" type="checkbox" id="useSingleplayerSettings" style="margin-left: -2.8em !important; transform: scale(1.1);">
+                                    <label class="form-check-label fw-bold text-warning ps-2 w-100">使用单人模式难度设置</label>
+                                    <div class="form-text ps-2">启用后将自动调整多项倍率，适合单人或极少数人的小团队。</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">活动事件</label>
                                     <input type="text" class="form-control" id="activeEvent" placeholder="例如: Easter, Summer, etc.">
-                                    <div class="form-text">手动激活官方节日活动 (如: Easter, Summer, FearEvolved 等)。</div>
+                                    <div class="form-text text-primary">手动激活官方节日活动 (如: Easter, Summer, FearEvolved 等)。</div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="p-3 bg-light border-top rounded-bottom-4">
-                            <button type="submit" class="btn btn-primary w-100 rounded-pill shadow-sm py-2 fw-bold"><i class="bi bi-save me-2"></i>保存所有配置</button>
-                        </div>
-                    </form>
-                </div>
+                        </div></div>
             </div>
-        </div>
+        </form>
+    </div>
 
-        <!-- 右侧日志与控制台 (固定在右侧，内部滚动) -->
-        <div class="col-md-5 col-lg-4 d-flex flex-column h-100" style="min-height: 0;">
-            <div class="card shadow-sm h-100 border-0 rounded-4 d-flex flex-column overflow-hidden" style="min-height: 0;">
+    <!-- 右侧：控制台 (占据 4 列) -->
+    <div class="col-lg-4 col-md-12 h-100 d-flex flex-column pb-2 p-0" id="right-column-container">
+            <div class="card shadow-sm border-0 rounded-4 d-flex flex-column overflow-hidden flex-grow-1" style="min-height: 0;">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center custom-console-header py-3 flex-shrink-0">
                     <div class="d-flex align-items-center">
                         <div class="window-controls me-3">
@@ -622,14 +757,27 @@
                     </div>
                     <button id="btnClearLog" class="btn btn-sm btn-outline-light rounded-pill px-3"><i class="bi bi-trash3 me-1"></i>清空</button>
                 </div>
+                <!-- 命令输入区 -->
+                <div class="bg-dark border-bottom border-secondary p-2 flex-shrink-0 position-relative">
+                    <div class="mb-2 position-relative">
+                        <input type="text" id="commandSearch" class="form-control form-control-sm bg-dark text-light border-secondary mb-1 custom-command-search" placeholder="点击这里搜索或选择常用命令... (支持拼音和英文)" autocomplete="off">
+                        <select class="form-select form-select-sm bg-dark text-light border-secondary custom-command-select" id="commandSelect" size="10" style="display: none; position: absolute; z-index: 1000; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                        </select>
+                    </div>
+                    <form id="rconForm" class="d-flex m-0">
+                        <input type="text" id="rconInput" class="form-control form-control-sm bg-dark text-light border-secondary me-2" placeholder="输入 RCON 命令...">
+                        <button type="submit" class="btn btn-sm btn-primary px-3">发送</button>
+                    </form>
+                </div>
                 <div class="card-body p-0 bg-black flex-grow-1 overflow-hidden">
                     <div id="consoleLog" class="p-3 font-monospace text-light h-100 overflow-y-auto" style="font-size: 13px; line-height: 1.5;">
                         <!-- 日志内容 -->
                     </div>
                 </div>
             </div>
-        </div>
     </div>
+</div>
+
 </div>
 
 <!-- 停止服务器确认 Modal -->
@@ -675,5 +823,5 @@
 <!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/main.js"></script>
-</body>
-</html>
+
+</body></html>

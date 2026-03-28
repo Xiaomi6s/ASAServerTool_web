@@ -69,6 +69,7 @@
   "preventDownloadItems": false,
   "noTributeDownloads": false,
   "enablePvPGamma": true,
+  "showFloatingDamageText": false,
   "showCreativeMode": false,
   "disableLootCrates": false,
   "disableFriendlyFire": false,
