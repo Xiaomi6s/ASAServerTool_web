@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { spawn, exec } = require('child_process');
 const WebSocket = require('ws');
 const http = require('http');
@@ -9,7 +10,8 @@ const https = require('https');
 const AdmZip = require('adm-zip');
 const archiver = require('archiver');
 const pidusage = require('pidusage');
-const Rcon = require('srcds-rcon');
+const { GameDig } = require('gamedig');
+const RconClient = require('rcon');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,39 +19,7 @@ const wss = new WebSocket.Server({ server });
 
 const os = require('os');
 
-// API: 选择服务端文件夹对话框 (通过 PowerShell)
-app.get('/api/server/select-folder', (req, res) => {
-    try {
-        // 由于 Node.js 没有原生的跨平台文件夹选择器，且此面板运行在 Windows 环境下
-        // 可以利用 PowerShell 弹出一个原生的文件夹选择框
-        const psCommand = `
-            Add-Type -AssemblyName System.windows.forms
-            $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
-            $folderBrowser.Description = "请选择存档备份文件夹"
-            $folderBrowser.ShowNewFolderButton = $true
-            $result = $folderBrowser.ShowDialog()
-            if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
-                Write-Output $folderBrowser.SelectedPath
-            } else {
-                Write-Output "CANCELLED"
-            }
-        `;
-
-        exec(`powershell -Command "${psCommand}"`, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`PowerShell error: ${error}`);
-                return res.status(500).json({ error: '无法打开文件夹选择器' });
-            }
-            const pathResult = stdout.trim();
-            if (pathResult === 'CANCELLED' || !pathResult) {
-                return res.json({ canceled: true });
-            }
-            res.json({ path: pathResult });
-        });
-    } catch (err) {
-        res.status(500).json({ error: '发生错误: ' + err.message });
-    }
-});
+// (已删除旧的 select-folder API，因为不再支持自定义备份目录)
 
 app.use(cors());
 app.use(express.json());
@@ -63,6 +33,7 @@ const configPath = path.join(process.cwd(), 'config.json');
 let serverProcess = null;
 let updateProcess = null;
 let serverStatus = 'stopped'; // 'stopped', 'starting', 'running', 'updating'
+let autoBackupTimer = null; // 自动备份定时器
 
 // 尝试监听端口的函数，如果被占用则自动加 1
 function startServer(port) {
@@ -115,6 +86,210 @@ function broadcastStatus(status) {
             ws.send(JSON.stringify({ type: 'status', status: serverStatus }));
         }
     });
+}
+
+// ARK/UE 常把 GameAnalytics、部分 Info 日志写到 stderr，并不等于进程错误
+function formatServerStderrChunk(chunk) {
+    const raw = String(chunk || '').replace(/\r\n/g, '\n');
+    const lines = raw.split('\n').map(s => s.trim()).filter(Boolean);
+    if (lines.length === 0) return null;
+    return lines.map((line) => {
+        if (/\bGameAnalytics\b/i.test(line) || /\bI\s+Info\//i.test(line) || /\bD\s+Debug\//i.test(line)) {
+            return `[引擎] ${line}`;
+        }
+        if (/\bE\s+Error\//i.test(line) || /\bFatal\b/i.test(line) || /\bAssertion failed\b/i.test(line)) {
+            return `[错误] ${line}`;
+        }
+        return `[stderr] ${line}`;
+    }).join('\n');
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** 从 INI 读取某 section 下的 key（用于 config.json 未填管理员密码时回退） */
+function readIniValue(filePath, sectionName, keyName) {
+    if (!fs.existsSync(filePath)) return '';
+    const content = fs.readFileSync(filePath, 'utf8');
+    const lines = content.split(/\r?\n/);
+    let inSection = false;
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+            inSection = trimmed === `[${sectionName}]`;
+            continue;
+        }
+        if (!inSection) continue;
+        const esc = keyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const m = line.match(new RegExp(`^\\s*${esc}\\s*=\\s*(.*)$`));
+        if (m) {
+            let v = m[1].trim();
+            if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+                v = v.slice(1, -1);
+            }
+            return v;
+        }
+    }
+    return '';
+}
+
+function gameUserSettingsIniPath() {
+    return path.join(DEFAULT_INSTALL_PATH, 'ShooterGame\\Saved\\Config\\WindowsServer\\GameUserSettings.ini');
+}
+
+/** RCON 使用的管理员密码：优先 config.json，空则读服务端 INI（与游戏内管理员密码一致） */
+function resolveAdminPasswordForRcon(config) {
+    let pwd = String(config.adminPassword || '').trim();
+    if (pwd) return pwd;
+    pwd = readIniValue(gameUserSettingsIniPath(), 'ServerSettings', 'ServerAdminPassword');
+    return String(pwd || '').trim();
+}
+
+/** 与 cerious-aasm 的 prepareServerConfig 一致：无密码时生成 16 位随机串并写回 config.json */
+function generateRandomPassword(length) {
+    const n = length || 16;
+    return crypto.randomBytes(Math.ceil(n / 2)).toString('hex').slice(0, n);
+}
+
+/**
+ * 若 config.json 与 INI 均无管理员密码，则自动生成并保存（参考项目对 rconPassword 的处理）。
+ * 返回已含可用密码的 config 对象。
+ */
+function ensureConfigHasAdminPassword() {
+    let config;
+    try {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (e) {
+        throw new Error('无法读取 config.json');
+    }
+    if (resolveAdminPasswordForRcon(config)) {
+        return config;
+    }
+    config.adminPassword = generateRandomPassword(16);
+    try {
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+        broadcastLog('[系统] 未设置管理员密码：已自动生成 16 位密码并写入 config.json（与 cerious-aasm 行为一致）。');
+    } catch (e) {
+        throw new Error('无法保存自动生成的管理员密码: ' + e.message);
+    }
+    return config;
+}
+
+// 与 cerious-aasm 一致使用 node-rcon（srcds-rcon 认证阶段仅 3s 超时，易导致失败）
+function connectRconOnce(host, port, password, authTimeoutMs) {
+    return new Promise((resolve, reject) => {
+        const rcon = new RconClient(host, port, password);
+        let settled = false;
+        const failTimer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            try {
+                rcon.disconnect();
+            } catch (_) {}
+            reject(new Error('RCON 认证超时（请确认服务端已完全启动，且 RCON 端口、管理员密码与启动参数一致）'));
+        }, authTimeoutMs);
+
+        const onAuth = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(failTimer);
+            rcon.removeListener('error', onErr);
+            resolve(rcon);
+        };
+
+        const onErr = (err) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(failTimer);
+            rcon.removeListener('auth', onAuth);
+            try {
+                rcon.disconnect();
+            } catch (_) {}
+            reject(err);
+        };
+
+        rcon.once('auth', onAuth);
+        rcon.once('error', onErr);
+        rcon.connect();
+    });
+}
+
+function sendRconCommand(rcon, command, timeoutMs) {
+    return new Promise((resolve, reject) => {
+        const parts = [];
+        let debounceTimer = null;
+        const maxTimer = setTimeout(() => {
+            cleanup();
+            resolve(parts.join('\n'));
+        }, timeoutMs);
+
+        function cleanup() {
+            clearTimeout(maxTimer);
+            if (debounceTimer) clearTimeout(debounceTimer);
+            rcon.removeListener('response', onResp);
+            rcon.removeListener('error', onErr);
+        }
+
+        const onResp = (str) => {
+            if (str) parts.push(str);
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                cleanup();
+                resolve(parts.join('\n'));
+            }, 450);
+        };
+
+        const onErr = (err) => {
+            cleanup();
+            reject(err);
+        };
+
+        rcon.on('response', onResp);
+        rcon.once('error', onErr);
+        rcon.send(command);
+    });
+}
+
+async function executeRconCommand(command) {
+    const config = ensureConfigHasAdminPassword();
+    if (config.enableRcon === false) {
+        throw new Error('RCON 未开启，请在配置中启用后重试');
+    }
+
+    const rconPort = parseInt(String(config.rconPort || 27020), 10);
+    const adminPassword = resolveAdminPasswordForRcon(config);
+
+    const maxAttempts = 25;
+    const delayMs = 2000;
+    let lastError = null;
+
+    for (let i = 1; i <= maxAttempts; i++) {
+        let rcon = null;
+        try {
+            if (i === 1 || i % 5 === 0 || i === maxAttempts) {
+                broadcastLog(`[RCON] 连接 127.0.0.1:${rconPort}（第 ${i}/${maxAttempts} 次）…`);
+            }
+            rcon = await connectRconOnce('127.0.0.1', rconPort, adminPassword, 20000);
+            const response = await sendRconCommand(rcon, command, 15000);
+            try {
+                rcon.disconnect();
+            } catch (_) {}
+            return response || '(无文本回复，命令可能已执行)';
+        } catch (err) {
+            lastError = err;
+            if (rcon) {
+                try {
+                    rcon.disconnect();
+                } catch (_) {}
+            }
+            if (i < maxAttempts) {
+                await sleep(delayMs);
+            }
+        }
+    }
+
+    throw lastError || new Error('RCON 连接失败');
 }
 
 // 下载 SteamCMD 辅助函数
@@ -230,8 +405,15 @@ function updateIniFile(filePath, section, updates) {
 // API: 获取配置
 app.get('/api/config', (req, res) => {
     try {
-        const configData = fs.readFileSync(configPath, 'utf8');
-        res.json(JSON.parse(configData));
+        const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (!String(configData.adminPassword || '').trim()) {
+            const fromIni = readIniValue(gameUserSettingsIniPath(), 'ServerSettings', 'ServerAdminPassword');
+            if (fromIni) configData.adminPassword = fromIni;
+        }
+        if (configData.rconPort === undefined || configData.rconPort === null || configData.rconPort === '') {
+            configData.rconPort = 27020;
+        }
+        res.json(configData);
     } catch (err) {
         res.status(500).json({ error: '无法读取配置文件' });
     }
@@ -256,7 +438,7 @@ app.post('/api/server/start', (req, res) => {
     }
     
     try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        const config = ensureConfigHasAdminPassword();
         
         broadcastStatus('starting');
         broadcastLog(`准备启动 ASA 服务器，地图: ${config.map}...`);
@@ -315,6 +497,9 @@ app.post('/api/server/start', (req, res) => {
 
             // 更新 GameUserSettings.ini (主要针对基础服务器设置和玩家环境设置)
             updateIniFile(gameUserSettingsIniPath, 'ServerSettings', {
+                ServerAdminPassword: config.adminPassword,
+                RCONEnabled: config.enableRcon !== false ? 'True' : 'False',
+                RCONPort: config.rconPort || 27020,
                 HarvestAmountMultiplier: config.harvestMultiplier,
                 XPMultiplier: config.xpMultiplier,
                 TamingSpeedMultiplier: config.tamingMultiplier,
@@ -346,8 +531,8 @@ app.post('/api/server/start', (req, res) => {
 
         // 构造启动参数 (参考 test7 优化)
         let mapString = config.map + '?listen';
-        mapString += `?SessionName="${config.serverName.replace(/ /g, '_')}"`;
-        if (config.serverPassword) mapString += `?ServerPassword="${config.serverPassword}"`;
+        mapString += `?SessionName=${config.serverName.replace(/ /g, '_')}`;
+        if (config.serverPassword) mapString += `?ServerPassword=${config.serverPassword}`;
         mapString += `?QueryPort=${config.queryPort || 27015}`;
 
         // 附加 test7 中经验证有效的 ? 参数
@@ -356,6 +541,7 @@ app.post('/api/server/start', (req, res) => {
         mapString += `?TamingSpeedMultiplier=${config.tamingMultiplier || 1.0}`;
         mapString += `?HarvestAmountMultiplier=${config.harvestMultiplier || 1.0}`;
         mapString += `?DifficultyOffset=${config.difficultyOffset || 1.0}`;
+        mapString += `?OverrideOfficialDifficulty=${config.overrideOfficialDifficulty || 5.0}`;
         mapString += `?MatingIntervalMultiplier=${config.matingInterval || 1.0}`;
         mapString += `?EggHatchSpeedMultiplier=${config.eggHatchSpeed || 1.0}`;
         mapString += `?BabyMatureSpeedMultiplier=${config.babyMatureSpeed || 1.0}`;
@@ -375,18 +561,37 @@ app.post('/api/server/start', (req, res) => {
         mapString += `?DinoCharacterFoodDrainMultiplier=${config.dinoFoodDrain || 1.0}`;
         mapString += `?DinoCharacterStaminaDrainMultiplier=${config.dinoStaminaDrain || 1.0}`;
         mapString += `?DinoCharacterHealthRecoveryMultiplier=${config.dinoHealthRecovery || 1.0}`;
+        mapString += `?TamedDinoCharacterFoodDrainMultiplier=${config.tamedDinoFoodDrain || 1.0}`;
+        mapString += `?TamedDinoTorporDrainMultiplier=${config.tamedDinoTorporDrain || 1.0}`;
+        mapString += `?PassiveTameIntervalMultiplier=${config.passiveTameInterval || 1.0}`;
 
         mapString += `?DayTimeSpeedScale=${config.dayTimeSpeed || 1.0}`;
         mapString += `?NightTimeSpeedScale=${config.nightTimeSpeed || 1.0}`;
+        mapString += `?DayCycleSpeedScale=${config.dayCycleSpeedScale || 1.0}`;
         
         mapString += `?ResourceNoReplenishRadiusPlayers=${config.resourceNoReplenishRadiusPlayers || 1.0}`;
         mapString += `?ResourcesRespawnPeriodMultiplier=${config.resourcesRespawnPeriodMultiplier || 1.0}`;
         mapString += `?CropGrowthSpeedMultiplier=${config.cropGrowthSpeedMultiplier || 1.0}`;
+        mapString += `?CropDecaySpeedMultiplier=${config.cropDecaySpeedMultiplier || 1.0}`;
         mapString += `?PoopIntervalMultiplier=${config.poopIntervalMultiplier || 1.0}`;
         mapString += `?LayEggIntervalMultiplier=${config.layEggIntervalMultiplier || 1.0}`;
         mapString += `?GlobalSpoilingTimeMultiplier=${config.globalSpoilingTimeMultiplier || 1.0}`;
         mapString += `?GlobalItemDecompositionTimeMultiplier=${config.globalItemDecompositionTimeMultiplier || 1.0}`;
         mapString += `?GlobalCorpseDecompositionTimeMultiplier=${config.globalCorpseDecompositionTimeMultiplier || 1.0}`;
+        mapString += `?ItemStackSizeMultiplier=${config.itemStackSizeMultiplier || 1.0}`;
+        mapString += `?FuelConsumptionIntervalMultiplier=${config.fuelConsumptionIntervalMultiplier || 1.0}`;
+        mapString += `?SupplyCrateLootQualityMultiplier=${config.supplyCrateLootQualityMultiplier || 1.0}`;
+        mapString += `?FishingLootQualityMultiplier=${config.fishingLootQualityMultiplier || 1.0}`;
+
+        mapString += `?StructurePickupTimeAfterPlacement=${config.structurePickupTimeAfterPlacement || 30}`;
+        mapString += `?MaxStructuresInRange=${config.maxStructuresInRange || 10500}`;
+        mapString += `?PlatformSaddleBuildAreaBoundsMultiplier=${config.platformSaddleBuildAreaBoundsMultiplier || 1.0}`;
+        mapString += `?MaxPlatformSaddleStructureLimit=${config.maxPlatformSaddleStructureLimit || 100}`;
+        
+        if (config.maxNumberOfPlayersInTribe > 0) mapString += `?MaxNumberOfPlayersInTribe=${config.maxNumberOfPlayersInTribe}`;
+        if (config.kickIdlePlayersPeriod > 0) mapString += `?KickIdlePlayersPeriod=${config.kickIdlePlayersPeriod}`;
+        if (config.preventOfflinePvPInterval > 0) mapString += `?PreventOfflinePvPInterval=${config.preventOfflinePvPInterval}`;
+        if (config.maxPersonalTamedDinos > 0) mapString += `?MaxPersonalTamedDinos=${config.maxPersonalTamedDinos}`;
 
         // 附加 test7 中的布尔规则参数
         mapString += `?AllowCaveBuildingPvE=${config.allowCaveBuildingPvE ? 'True' : 'False'}`;
@@ -398,13 +603,29 @@ app.post('/api/server/start', (req, res) => {
         mapString += `?PreventOfflinePvP=${config.preventOfflinePvP ? 'True' : 'False'}`;
         mapString += `?bUseCorpseLocator=${config.useCorpseLocator !== false ? 'True' : 'False'}`;
         mapString += `?DisableWeatherFog=${config.disableWeatherFog ? 'True' : 'False'}`;
+        
+        mapString += `?bAutoUnlockAllEngrams=${config.autoUnlockAllEngrams ? 'True' : 'False'}`;
+        mapString += `?AutoDestroyDecayedDinos=${config.autoDestroyDecayedDinos ? 'True' : 'False'}`;
+        mapString += `?DisableImprintDinoBuff=${config.disableImprintDinoBuff ? 'True' : 'False'}`;
+        mapString += `?bPreventMateBoost=${config.preventMateBoost ? 'True' : 'False'}`;
+        mapString += `?AllowIntegratedSPlusStructures=${config.allowIntegratedSPlusStructures !== false ? 'True' : 'False'}`;
+        mapString += `?bDisableStructureDecayPvE=${config.bDisableStructureDecayPvE ? 'True' : 'False'}`;
+        mapString += `?bAllowPlatformSaddleMultiFloors=${config.bAllowPlatformSaddleMultiFloors !== false ? 'True' : 'False'}`;
+        mapString += `?DisableCryopodEnemyCheck=${config.disableCryopodEnemyCheck !== false ? 'True' : 'False'}`;
+        mapString += `?AllowCryoFridgeOnSaddle=${config.allowCryoFridgeOnSaddle !== false ? 'True' : 'False'}`;
+        mapString += `?AllowCustomRecipes=${config.allowCustomRecipes !== false ? 'True' : 'False'}`;
+        mapString += `?bPvEAllowTribeWar=${config.bPvEAllowTribeWar !== false ? 'True' : 'False'}`;
+        mapString += `?AllowHitMarkers=${config.allowHitMarkers !== false ? 'True' : 'False'}`;
 
         if (config.enablePvE) mapString += `?ServerPVE=True`;
-        if (config.enableRcon) mapString += `?RCONEnabled=True?RCONPort=${config.rconPort || 27020}`;
+        if (config.enableRcon !== false) {
+            mapString += `?RCONEnabled=True`;
+            mapString += `?RCONPort=${config.rconPort || 27020}`;
+        }
         if (config.showFloatingDamageText) mapString += `?ShowFloatingDamageText=True`;
 
         // 管理员密码必须是最后一个带问号的参数
-        if (config.adminPassword) mapString += `?ServerAdminPassword="${config.adminPassword}"`;
+        if (config.adminPassword) mapString += `?ServerAdminPassword=${config.adminPassword}`;
 
         let args = [mapString];
         
@@ -414,6 +635,9 @@ app.post('/api/server/start', (req, res) => {
 
         if (config.useForceRespawnDinos) args.push(`-ForceRespawnDinos`);
         if (config.crossplay !== false) args.push(`-crossplay`); // 默认开启跨平台
+
+        // 白名单
+        if (config.useExclusiveList) args.push(`-exclusivejoin`);
 
         // 追加 Mod 和启动命令行参数 (-)
         if (config.mods) args.push(`-mods=${config.mods}`);
@@ -447,18 +671,36 @@ app.post('/api/server/start', (req, res) => {
         broadcastStatus('running');
         broadcastLog('服务器进程已启动！');
 
+        // 启动自动备份定时器
+        if (config.enableAutoBackup && config.autoBackupInterval > 0) {
+            const intervalMs = config.autoBackupInterval * 60 * 1000;
+            broadcastLog(`[系统] 已开启自动备份，每 ${config.autoBackupInterval} 分钟执行一次。`);
+            autoBackupTimer = setInterval(() => {
+                if (serverStatus === 'running') {
+                    performBackup(config);
+                }
+            }, intervalMs);
+        }
+
         serverProcess.stdout.on('data', (data) => {
             broadcastLog(data.toString().trim());
         });
 
         serverProcess.stderr.on('data', (data) => {
-            broadcastLog(`[ERROR] ${data.toString().trim()}`);
+            const msg = formatServerStderrChunk(data);
+            if (msg) broadcastLog(msg);
         });
 
         serverProcess.on('close', (code) => {
             serverProcess = null;
             broadcastStatus('stopped');
             broadcastLog(`服务器进程已退出，退出码: ${code}`);
+            
+            // 清理自动备份定时器
+            if (autoBackupTimer) {
+                clearInterval(autoBackupTimer);
+                autoBackupTimer = null;
+            }
         });
         
         res.json({ success: true, message: '启动命令已发送' });
@@ -612,46 +854,15 @@ app.post('/api/server/save', async (req, res) => {
     }
 
     try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (!config.enableRcon) {
-            broadcastLog('----------------------------------------');
-            broadcastLog('[系统提示] 触发了“立即存档”操作，但未开启 RCON。');
-            broadcastLog('[系统提示] 请在游戏内使用管理员命令 `cheat SaveWorld` 存档，或在配置中开启 RCON。');
-            broadcastLog('----------------------------------------');
-            return res.json({ success: true, message: '未开启 RCON，仅记录操作' });
+        const response = await executeRconCommand('SaveWorld');
+        broadcastLog(`[RCON] SaveWorld 已发送`);
+        if (response && String(response).trim() && !String(response).includes('无文本回复')) {
+            broadcastLog(`[RCON] 回复: ${response}`);
         }
-
-        const rconPortStr = config.rconPort || "27020";
-        const rcon = Rcon({
-            address: '127.0.0.1',
-            password: config.adminPassword,
-            port: parseInt(rconPortStr, 10),
-            timeout: 5000 // 增加超时时间
-        });
-
-        // 输出 RCON 连接信息，方便排查问题
-        broadcastLog(`[系统] 正在尝试通过 RCON 连接到 127.0.0.1:${rconPortStr}...`);
-
-        await rcon.connect();
-        
-        try {
-            const response = await rcon.command('SaveWorld');
-            broadcastLog('----------------------------------------');
-            broadcastLog(`[RCON] 发送存档命令成功: ${response || 'Server received, But no response!!'}`);
-            broadcastLog('----------------------------------------');
-        } catch (cmdErr) {
-            // 方舟有些命令即使执行成功也可能不返回标准响应或超时，在这里做兼容
-            broadcastLog('----------------------------------------');
-            broadcastLog(`[RCON] 发送存档命令完成 (可能有延迟或无响应): ${cmdErr.message}`);
-            broadcastLog('----------------------------------------');
-        } finally {
-            rcon.disconnect();
-        }
-        
-        res.json({ success: true, message: '已发送存档命令' });
+        return res.json({ success: true, message: '已通过 RCON 发送存档命令', response });
     } catch (err) {
-        broadcastLog(`[RCON Error] 存档失败: ${err.message}`);
-        res.status(500).json({ error: 'RCON 命令发送失败: ' + err.message });
+        broadcastLog(`[RCON] 存档失败: ${err.message}（ASA 专用服不接受通过本面板管道输入控制台命令，请修复 RCON）`);
+        return res.status(500).json({ error: '存档命令发送失败: ' + err.message });
     }
 });
 
@@ -667,50 +878,69 @@ app.post('/api/server/rcon', async (req, res) => {
     }
 
     try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (!config.enableRcon) {
-            broadcastLog('----------------------------------------');
-            broadcastLog('[系统提示] 尝试发送命令，但未开启 RCON。');
-            broadcastLog('----------------------------------------');
-            return res.status(400).json({ error: '未开启 RCON，请先在配置中开启' });
+        const response = await executeRconCommand(command);
+        broadcastLog(`[RCON] > ${command}`);
+        if (response && String(response).trim()) {
+            broadcastLog(`[RCON] 回复:\n${response}`);
+        } else {
+            broadcastLog(`[RCON] 命令已发送（无文本回复）`);
         }
-
-        const rconPortStr = config.rconPort || "27020";
-        const rcon = Rcon({
-            address: '127.0.0.1',
-            password: config.adminPassword,
-            port: parseInt(rconPortStr, 10),
-            timeout: 5000 // 增加超时时间
-        });
-
-        // 输出 RCON 连接信息，方便排查问题
-        broadcastLog(`[系统] 正在尝试通过 RCON 连接到 127.0.0.1:${rconPortStr}...`);
-
-        await rcon.connect();
-        
-        try {
-            const response = await rcon.command(command);
-            broadcastLog(`[RCON] > ${command}`);
-            if (response) {
-                broadcastLog(`[RCON Response] ${response}`);
-            }
-            res.json({ success: true, response });
-        } catch (cmdErr) {
-            // 方舟有些命令即使执行成功也可能不返回标准响应或超时，在这里做兼容
-            broadcastLog(`[RCON] > ${command}`);
-            broadcastLog(`[RCON Response] (可能无响应或已执行) ${cmdErr.message}`);
-            res.json({ success: true, response: cmdErr.message });
-        } finally {
-            rcon.disconnect();
-        }
-
+        return res.json({ success: true, response });
     } catch (err) {
-        broadcastLog(`[RCON Error] 命令 "${command}" 发送失败: ${err.message}`);
-        res.status(500).json({ error: 'RCON 命令发送失败: ' + err.message });
+        broadcastLog(`[RCON] 命令失败: ${err.message}`);
+        return res.status(500).json({ error: '命令发送失败: ' + err.message });
     }
 });
 
-// API: 备份存档
+// 提取的自动备份核心逻辑
+function performBackup(config) {
+    try {
+        const savedDir = path.join(DEFAULT_INSTALL_PATH, 'ShooterGame\\Saved');
+        
+        // 强制使用默认备份路径 (项目根目录的 backups 文件夹)
+        const backupDir = path.join(process.cwd(), 'backups');
+
+        if (!fs.existsSync(savedDir)) {
+            broadcastLog('[系统] 未找到存档目录，跳过本次自动备份。');
+            return false;
+        }
+
+        if (!fs.existsSync(backupDir)) {
+            try {
+                fs.mkdirSync(backupDir, { recursive: true });
+            } catch (err) {
+                broadcastLog(`[系统] 无法创建自动备份目录 ${backupDir}，跳过备份。`);
+                return false;
+            }
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const backupFileName = `backup_${timestamp}.zip`;
+        const backupFilePath = path.join(backupDir, backupFileName);
+
+        const output = fs.createWriteStream(backupFilePath);
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        output.on('close', function() {
+            broadcastLog(`[系统] 自动备份完成: ${backupFileName} (${(archive.pointer() / 1024 / 1024).toFixed(2)} MB)`);
+        });
+
+        archive.on('error', function(err) {
+            broadcastLog(`[系统] 自动备份打包出错: ${err.message}`);
+        });
+
+        archive.pipe(output);
+        archive.directory(savedDir, false);
+        archive.finalize();
+
+        return true;
+    } catch (err) {
+        broadcastLog(`[系统] 自动备份异常: ${err.message}`);
+        return false;
+    }
+}
+
+// API: 手动备份存档
 app.post('/api/server/backup', (req, res) => {
     try {
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -767,16 +997,25 @@ app.post('/api/server/backup', (req, res) => {
 // API: 获取备份列表
 app.get('/api/server/backups', (req, res) => {
     try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        let backupDir = path.join(process.cwd(), 'backups');
-        if (config.backupPath && config.backupPath.trim() !== '') {
-            backupDir = config.backupPath.trim();
-        }
+        const backupDir = path.join(process.cwd(), 'backups');
         
         if (!fs.existsSync(backupDir)) {
             return res.json({ backups: [], backupDir });
         }
-        const files = fs.readdirSync(backupDir).filter(file => file.endsWith('.zip'));
+        // 获取详细的文件信息并按文件修改时间排序
+        const files = fs.readdirSync(backupDir)
+            .filter(file => file.endsWith('.zip'))
+            .map(file => {
+                const stat = fs.statSync(path.join(backupDir, file));
+                return {
+                    name: file,
+                    time: stat.mtime.getTime(),
+                    dateString: stat.mtime.toLocaleString('zh-CN', { hour12: false }),
+                    size: (stat.size / 1024 / 1024).toFixed(2) + ' MB'
+                };
+            })
+            .sort((a, b) => a.time - b.time);
+            
         res.json({ backups: files, backupDir });
     } catch (err) {
         res.status(500).json({ error: '获取备份列表失败: ' + err.message });
@@ -793,11 +1032,7 @@ app.post('/api/server/restore', (req, res) => {
     }
 
     try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        let backupDir = path.join(process.cwd(), 'backups');
-        if (config.backupPath && config.backupPath.trim() !== '') {
-            backupDir = config.backupPath.trim();
-        }
+        const backupDir = path.join(process.cwd(), 'backups');
 
         const backupFilePath = path.join(backupDir, file);
         const savedDir = path.join(DEFAULT_INSTALL_PATH, 'ShooterGame\\Saved');
@@ -828,6 +1063,28 @@ app.post('/api/server/restore', (req, res) => {
     } catch (err) {
         broadcastLog(`[错误] 恢复存档失败: ${err.message}`);
         res.status(500).json({ error: '恢复存档失败: ' + err.message });
+    }
+});
+
+// API: 删除存档
+app.post('/api/server/delete-backup', (req, res) => {
+    const { file } = req.body;
+    if (!file) return res.status(400).json({ error: '未提供备份文件名' });
+
+    try {
+        const backupDir = path.join(process.cwd(), 'backups');
+
+        const backupFilePath = path.join(backupDir, file);
+
+        if (!fs.existsSync(backupFilePath)) {
+            return res.status(404).json({ error: `备份文件不存在于路径: ${backupFilePath}` });
+        }
+
+        fs.unlinkSync(backupFilePath);
+        broadcastLog(`[系统] 已删除备份文件: ${file}`);
+        res.json({ success: true, message: '删除成功' });
+    } catch (err) {
+        res.status(500).json({ error: '删除备份失败: ' + err.message });
     }
 });
 
@@ -877,7 +1134,7 @@ app.get('/api/server/ip', async (req, res) => {
     }
 });
 
-// API: 获取在线玩家数 (通过 RCON 查询)
+// API: 获取在线玩家数 (使用 RCON 命令 listplayers 获取)
 app.get('/api/server/players', async (req, res) => {
     if (!serverProcess || serverStatus !== 'running') {
         return res.json({ success: false, players: 0 });
@@ -885,39 +1142,28 @@ app.get('/api/server/players', async (req, res) => {
 
     try {
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        
         if (!config.enableRcon) {
-            return res.json({ success: false, players: 0, message: 'RCON 未开启' });
+            return res.json({ success: false, players: '?' });
         }
 
-        const rconPortStr = config.rconPort || "27020";
-        const rcon = Rcon({
-            address: '127.0.0.1',
-            password: config.adminPassword,
-            port: parseInt(rconPortStr, 10),
-            timeout: 5000 // 增加超时时间
-        });
+        // 使用新写的 RCON 函数去执行 listplayers
+        const response = await executeRconCommand('listplayers');
+        const responseText = String(response || '').trim();
 
-        await rcon.connect();
-        const response = await rcon.command('listplayers');
-        rcon.disconnect();
-
-        // 解析 listplayers 的返回结果
-        // 返回格式通常是 "No Players Connected" 或者一行一个玩家信息
-        // ASA rcon listplayers 有时会返回类似 "1. PlayerName, SteamID"
-        const responseText = response.trim();
-        if (responseText === '' || responseText.includes('No Players Connected') || responseText.includes('Server received, But no response!!')) {
+        // 典型的无玩家回复: "No Players Connected"
+        if (responseText === '' || responseText.includes('No Players Connected') || responseText.includes('无文本回复')) {
             return res.json({ success: true, players: 0 });
         } else {
-            // 通过换行符分割，过滤掉空行，就是玩家数量
+            // listplayers 的返回格式通常是一行一个玩家，或者带编号的列表
             const lines = responseText.split('\n');
-            // 确保不把表头或无关信息算进去，简单算行数即可（每行一个玩家）
-            // 过滤掉仅包含空格的行，以及明显的非玩家行
+            // 过滤掉空行和明显不是玩家的提示信息
             const playerCount = lines.filter(line => line.trim().length > 0 && !line.includes('No Players')).length;
             return res.json({ success: true, players: playerCount });
         }
     } catch (err) {
-        // RCON 连接失败或超时
-        res.json({ success: false, players: 0, error: err.message });
+        // 如果 RCON 没连上，就返回占位符
+        return res.json({ success: false, players: '?' });
     }
 });
 

@@ -26,16 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // 服务器设置
         'serverName', 'maxPlayers', 'map', 'serverPassword', 'adminPassword', 'port', 'queryPort', 'enableRcon', 'rconPort', 'mods', 'noBattlEye', 'autoManagedMods', 'autoSavePeriod', 'backupPath', 'customArgs',
         // 玩家
-        'playerDamage', 'playerResistance', 'playerWaterDrain', 'playerFoodDrain', 'playerStaminaDrain', 'playerHealthRecovery', 'playerHarvestingDamage',
+        'playerDamage', 'playerResistance', 'playerWaterDrain', 'playerFoodDrain', 'playerStaminaDrain', 'playerHealthRecovery', 'playerHarvestingDamage', 'maxNumberOfPlayersInTribe', 'kickIdlePlayersPeriod', 'autoUnlockAllEngrams',
         // 生物
         'dinoCount', 'maxTamedDinos', 'dinoDamage', 'dinoResistance', 'dinoFoodDrain', 'dinoStaminaDrain', 'dinoHealthRecovery', 'dinoHarvestingDamage', 'dinoTurretDamage',
         'disableTame', 'disableRiding', 'matingInterval', 'matingSpeed', 'eggHatchSpeed', 'babyMatureSpeed', 'babyImprintAmountMultiplier', 'babyCuddleInterval', 'babyImprintingStatScale', 'babyFoodConsumptionSpeed', 'babyCuddleGracePeriod', 'babyCuddleLoseImprintQualitySpeed',
+        'tamedDinoFoodDrain', 'tamedDinoTorporDrain', 'passiveTameInterval', 'maxPersonalTamedDinos', 'autoDestroyDecayedDinos', 'disableImprintDinoBuff', 'preventMateBoost',
         // 建筑
-        'structureDamage', 'structureResistance', 'platformMaxStructuresMultiplier', 'disableStructurePlacementCollision',
+        'structureDamage', 'structureResistance', 'platformMaxStructuresMultiplier', 'disableStructurePlacementCollision', 'structurePickupTimeAfterPlacement', 'maxStructuresInRange', 'platformSaddleBuildAreaBoundsMultiplier', 'maxPlatformSaddleStructureLimit', 'allowIntegratedSPlusStructures', 'bDisableStructureDecayPvE', 'bAllowPlatformSaddleMultiFloors', 'disableCryopodEnemyCheck', 'allowCryoFridgeOnSaddle',
         // 世界
         'dayTimeSpeed', 'nightTimeSpeed', 'resourcesRespawnPeriodMultiplier', 'resourceNoReplenishRadiusPlayers', 'cropGrowthSpeedMultiplier', 'poopIntervalMultiplier', 'layEggIntervalMultiplier', 'globalSpoilingTimeMultiplier', 'globalItemDecompositionTimeMultiplier', 'globalCorpseDecompositionTimeMultiplier', 'allowThirdPerson', 'showMapPlayerLocation', 'enableCrosshair', 'forceAllowCaveFlyers', 'allowFlyerCarryPvE',
+        'dayCycleSpeedScale', 'itemStackSizeMultiplier', 'supplyCrateLootQualityMultiplier', 'fishingLootQualityMultiplier', 'fuelConsumptionIntervalMultiplier', 'cropDecaySpeedMultiplier', 'allowCustomRecipes',
+        // 备份
+        'enableAutoBackup', 'autoBackupInterval', 'autoBackupMaxCount',
         // 规则
-        'xpMultiplier', 'tamingMultiplier', 'harvestMultiplier', 'difficultyOffset', 'maximizeDifficulty',
+        'xpMultiplier', 'tamingMultiplier', 'harvestMultiplier', 'difficultyOffset', 'maximizeDifficulty', 'overrideOfficialDifficulty', 'preventOfflinePvPInterval', 'bPvEAllowTribeWar', 'allowHitMarkers', 'useExclusiveList',
         'allowSpeedLeveling', 'allowFlyerSpeedLeveling', 'enablePvE', 'hardcoreMode', 'allowUnlimitedRespecs',
         'showFloatingDamageText', 'allowThirdPerson', 'globalVoiceChat', 'proximityChat', 'alwaysNotifyPlayerJoin', 'alwaysNotifyPlayerLeft', 'serverAdminLog', 'enableCrosshair',
         'forceNoHUD', 'preventDownloadSurvivors', 'preventDownloadDinos', 'preventDownloadItems', 'noTributeDownloads',
@@ -141,32 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 文件夹选择器逻辑
-    const btnSelectBackupDir = document.getElementById('btnSelectBackupDir');
-    if (btnSelectBackupDir) {
-        btnSelectBackupDir.addEventListener('click', () => {
-            const originalHtml = btnSelectBackupDir.innerHTML;
-            btnSelectBackupDir.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-            btnSelectBackupDir.disabled = true;
-
-            fetch('/api/server/select-folder')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.path) {
-                        document.getElementById('backupPath').value = data.path;
-                    } else if (data.error) {
-                        alert(data.error);
-                    }
-                })
-                .catch(err => {
-                    alert('无法调用文件夹选择器: ' + err.message);
-                })
-                .finally(() => {
-                    btnSelectBackupDir.innerHTML = originalHtml;
-                    btnSelectBackupDir.disabled = false;
-                });
-        });
-    }
+    // 文件夹选择器逻辑 (已移除)
+    // 备份功能现在强制使用默认的 backups 目录，不再允许自定义，以免引起权限和路径问题。
 
     // 2. 建立 WebSocket 连接接收日志和状态
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -277,57 +257,120 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert(data.error);
                 } else {
                     alert(data.message);
+                    loadBackupList(); // 备份成功后刷新列表
                 }
             });
     });
 
-    const restoreModalEl = document.getElementById('restoreModal');
-    if (restoreModalEl) {
-        restoreModalEl.addEventListener('show.bs.modal', () => {
-            const backupList = document.getElementById('backupList');
-            backupList.innerHTML = '<div class="text-center p-3 text-muted small">加载中...</div>';
-            
-            fetch('/api/server/backups')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.backups && data.backups.length > 0) {
-                        backupList.innerHTML = '';
-                        // 倒序排列，最新的在前面
-                        data.backups.reverse().forEach(file => {
-                            const btn = document.createElement('button');
-                            btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
-                            btn.innerHTML = `
-                                <span><i class="bi bi-file-zip me-2 text-secondary"></i>${file}</span>
-                                <span class="btn btn-sm btn-outline-primary rounded-pill px-3">恢复</span>
-                            `;
-                            btn.addEventListener('click', () => {
-                                if (confirm(`确定要恢复存档 [ ${file} ] 吗？这会覆盖当前的存档数据！\n建议在执行前先停止服务器并进行一次新的备份。`)) {
-                                    // 关闭 Modal
-                                    const modalInstance = bootstrap.Modal.getInstance(restoreModalEl);
-                                    modalInstance.hide();
-                                    
-                                    // 发送恢复请求
-                                    fetch('/api/server/restore', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ file })
-                                    })
-                                    .then(r => r.json())
-                                    .then(resData => {
-                                        if(resData.error) alert(resData.error);
-                                        else alert('恢复成功！');
-                                    });
-                                }
-                            });
-                            backupList.appendChild(btn);
+    // === 备份列表逻辑 ===
+    const backupListContainer = document.getElementById('backupListContainer');
+    const btnRefreshBackups = document.getElementById('btnRefreshBackups');
+    let currentBackupAction = { file: '', action: '' }; // 记录当前要操作的备份文件
+
+    function loadBackupList() {
+        if (!backupListContainer) return;
+        backupListContainer.innerHTML = '<div class="text-center text-muted py-4">正在加载备份列表...</div>';
+        
+        fetch('/api/server/backups')
+            .then(res => res.json())
+            .then(data => {
+                if (data.backups && data.backups.length > 0) {
+                    backupListContainer.innerHTML = '';
+                    // 倒序排列，最新的在前面
+                    data.backups.reverse().forEach(fileData => {
+                        const file = fileData.name;
+                        const dateStr = fileData.dateString;
+                        const sizeStr = fileData.size;
+                        
+                        const div = document.createElement('div');
+                        div.className = 'list-group-item d-flex justify-content-between align-items-center py-3';
+                        div.innerHTML = `
+                            <div>
+                                <h6 class="mb-1 fw-bold text-dark"><i class="bi bi-file-zip-fill text-primary me-2"></i>${file}</h6>
+                                <small class="text-muted"><i class="bi bi-clock me-1"></i>备份时间: ${dateStr} &nbsp;&nbsp; <i class="bi bi-hdd me-1"></i>大小: ${sizeStr}</small>
+                            </div>
+                            <div class="btn-group flex-shrink-0">
+                                <button class="btn btn-sm btn-outline-warning fw-bold text-dark btn-restore-backup" data-file="${file}" title="恢复此备份">恢复</button>
+                                <button class="btn btn-sm btn-outline-danger fw-bold btn-delete-backup" data-file="${file}" title="永久删除此备份">删除</button>
+                            </div>
+                        `;
+                        backupListContainer.appendChild(div);
+                    });
+
+                    // 绑定事件
+                    document.querySelectorAll('.btn-restore-backup').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            currentBackupAction.file = e.target.getAttribute('data-file');
+                            document.getElementById('restoreBackupFilenameText').textContent = currentBackupAction.file;
+                            new bootstrap.Modal(document.getElementById('restoreBackupConfirmModal')).show();
                         });
-                    } else {
-                        backupList.innerHTML = '<div class="text-center p-3 text-muted small">暂无备份记录</div>';
-                    }
-                })
-                .catch(() => {
-                    backupList.innerHTML = '<div class="text-center p-3 text-danger small">加载失败</div>';
-                });
+                    });
+
+                    document.querySelectorAll('.btn-delete-backup').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            currentBackupAction.file = e.target.getAttribute('data-file');
+                            document.getElementById('deleteBackupFilenameText').textContent = currentBackupAction.file;
+                            new bootstrap.Modal(document.getElementById('deleteBackupConfirmModal')).show();
+                        });
+                    });
+                } else {
+                    backupListContainer.innerHTML = '<div class="text-center text-muted py-4">暂无备份记录</div>';
+                }
+            })
+            .catch(() => {
+                backupListContainer.innerHTML = '<div class="text-center text-danger py-4">加载备份列表失败，请重试</div>';
+            });
+    }
+
+    if (btnRefreshBackups) {
+        btnRefreshBackups.addEventListener('click', loadBackupList);
+    }
+    
+    // 初始化时加载一次备份列表
+    loadBackupList();
+
+    // 确认恢复
+    const btnConfirmRestoreBackup = document.getElementById('btnConfirmRestoreBackup');
+    if (btnConfirmRestoreBackup) {
+        btnConfirmRestoreBackup.addEventListener('click', () => {
+            if (!currentBackupAction.file) return;
+            const modal = bootstrap.Modal.getInstance(document.getElementById('restoreBackupConfirmModal'));
+            modal.hide();
+            
+            fetch('/api/server/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file: currentBackupAction.file })
+            })
+            .then(r => r.json())
+            .then(resData => {
+                if(resData.error) alert(resData.error);
+                else alert('恢复成功！');
+            });
+        });
+    }
+
+    // 确认删除
+    const btnConfirmDeleteBackup = document.getElementById('btnConfirmDeleteBackup');
+    if (btnConfirmDeleteBackup) {
+        btnConfirmDeleteBackup.addEventListener('click', () => {
+            if (!currentBackupAction.file) return;
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteBackupConfirmModal'));
+            modal.hide();
+            
+            fetch('/api/server/delete-backup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file: currentBackupAction.file })
+            })
+            .then(r => r.json())
+            .then(resData => {
+                if(resData.error) {
+                    alert(resData.error);
+                } else {
+                    loadBackupList(); // 重新加载列表
+                }
+            });
         });
     }
 
@@ -361,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(() => {});
                 
-            // 获取在线人数 (需后端支持RCON或日志解析，目前展示占位逻辑，后续可完善)
+            // 获取在线人数 (现在使用 GameDig / Steam Query)
             fetch('/api/server/players')
                 .then(res => res.json())
                 .then(data => {
@@ -369,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.success) {
                         onlinePlayersText.textContent = `${data.players} / ${maxPlayers}`;
                     } else {
-                        // RCON连接失败或者未开启时显示问号
+                        // 服务器未完全启动或查询失败时显示问号
                         onlinePlayersText.textContent = `? / ${maxPlayers}`;
                     }
                 })
@@ -544,6 +587,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const rconOutputArea = document.getElementById('rconOutputArea');
+            if (rconOutputArea) {
+                const time = new Date().toLocaleTimeString();
+                rconOutputArea.innerHTML += `\n<span class="text-light">[${time}] > ${command}</span>`;
+                rconOutputArea.scrollTop = rconOutputArea.scrollHeight;
+            }
+
             // 发送命令
             fetch('/api/server/rcon', {
                 method: 'POST',
@@ -552,16 +602,25 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(res => res.json())
             .then(data => {
-                if (data.error) {
-                    appendLog(`[RCON 发送失败] ${data.error}`);
-                } else {
-                    // 清空输入框（可选，或者保留方便修改参数）
-                    rconInput.value = '';
-                    if (commandSearch) commandSearch.value = '';
+                if (rconOutputArea) {
+                    if (data.error) {
+                        rconOutputArea.innerHTML += `\n<span class="text-danger">[错误] ${data.error}</span>`;
+                    } else if (data.response && data.response.trim() !== '') {
+                        rconOutputArea.innerHTML += `\n<span class="text-success">[回复] ${data.response}</span>`;
+                    } else {
+                        rconOutputArea.innerHTML += `\n<span class="text-secondary">[命令已送达 (无文本回复)]</span>`;
+                    }
+                    rconOutputArea.scrollTop = rconOutputArea.scrollHeight;
                 }
+                rconInput.value = '';
+                if (commandSearch) commandSearch.value = '';
+                if (commandSelect) commandSelect.style.display = 'none';
             })
             .catch(err => {
-                appendLog(`[RCON 请求错误] ${err.message}`);
+                if (rconOutputArea) {
+                    rconOutputArea.innerHTML += `\n<span class="text-danger">[网络错误] ${err.message}</span>`;
+                    rconOutputArea.scrollTop = rconOutputArea.scrollHeight;
+                }
             });
         });
     }
